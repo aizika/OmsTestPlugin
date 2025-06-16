@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<idea-plugin>
+    <id>com.workday.plugin.omstest</id>
+    <name>Gradle Test Runner</name>
+    <version>1.0.0</version>
+    <vendor email="alexander.aizikivsky@workday.com" url="https://bitbucket.workday.com/users/alexander.aizikivsky">Alexander Aizikivsky</vendor>
+
+    <description>
+        Adds right-click menu options to run Gradle tests by method, class, or package, with re-run support.
+    </description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+
+    <actions>
+        <group id="OmsTestActionsGroup"
+               class="com.workday.plugin.omstest.OmsTestActionsGroup"
+               text="OMS Gradle Test"
+               description="Gradle test options for OMS">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+
+            <action id="RunGradleTestByMethod"
+                    class="com.workday.plugin.omstest.RunGradleTestByMethod"
+                    text="Run Test (Method)"
+                    description="Run selected test method via Gradle"
+                    icon="AllIcons.Actions.Execute"/>
+            <action id="RunGradleTestByClass"
+                    class="com.workday.plugin.omstest.RunGradleTestByClass"
+                    text="Run Test (Class)"
+                    description="Run selected test class via Gradle"
+                    icon="AllIcons.Actions.Execute"/>
+            <action id="RunGradleTestByPackage"
+                    class="com.workday.plugin.omstest.RunGradleTestByPackage"
+                    text="Run Test (Package)"
+                    description="Run all tests in this package via Gradle"
+                    icon="AllIcons.Actions.Execute"/>
+            <action id="ReRunLastTest"
+                    class="com.workday.plugin.omstest.ReRunLastTest"
+                    text="Re-Run Last Test"
+                    description="Re-run the last executed test command"
+                    icon="AllIcons.Actions.Rerun"/>
+        </group>
+    </actions>
+</idea-plugin>
