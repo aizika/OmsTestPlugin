@@ -15,7 +15,7 @@ import com.workday.plugin.omstest.util.VisibilityManager
  */
 class RunGradleTestByClass : AnAction() {
     override fun actionPerformed(event: AnActionEvent) {
-        val target = TargetResolver.resolveClassTarget(event) ?: return
+        val target = TargetResolver.resolveClassTargetForIcon(event) ?: return
 
         val targetName = "-PtestClass=${target.fqName}"
         LocalTestExecutor.runCommand(event.project, target.runTabName, targetName)

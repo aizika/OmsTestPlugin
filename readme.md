@@ -12,7 +12,7 @@ It was tested very lightly, so please use it at your own risk and report any iss
 
 You can download the latest version of the plugin from the link below and install it manually in IntelliJ:
 
-👉 [Download Plugin ZIP](https://github.com/aizika/OmsTest/releases/download/v1.0-beta/OmsTest-1.0-beta.zip)
+👉 [Download Plugin ZIP]((https://github.com/user-attachments/files/20886744/OmsTest-1.0-BETA.zip))
 Follow the installation instructions below to set it up in IntelliJ IDEA.
 
 ---

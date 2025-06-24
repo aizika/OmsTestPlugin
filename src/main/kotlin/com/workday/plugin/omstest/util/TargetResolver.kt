@@ -41,7 +41,7 @@ object TargetResolver {
         return MethodTarget(fqMethodName, method.name)
     }
 
-    fun resolveClassTarget(e: AnActionEvent): ClassTarget? {
+    fun resolveClassTargetForIcon(e: AnActionEvent): ClassTarget? {
         val context = resolveCommonContext(e) ?: return null
 
         val psiClass = PsiTreeUtil.getParentOfType(context.element, PsiClass::class.java)
@@ -75,16 +75,15 @@ object TargetResolver {
         return MethodTarget(fqMethodName, label)
     }
 
-    fun resolveClassTarget(psiElement: PsiElement): ClassTarget? {
-        val project = psiElement.project
+    fun resolveClassTargetForIcon(psiElement: PsiElement): ClassTarget? {
         val psiClass = PsiTreeUtil.getParentOfType(psiElement, PsiClass::class.java)
-            ?: return showError(project, "No class found for gutter icon.")
+            ?: return null
 
-        val qualifiedName = qualifiedNameOrError(project, psiClass) ?: return null
+        val qualifiedName = psiClass.qualifiedName ?: return null
 
         val category = getTestCategory(psiClass)
             .takeIf { it.isNotEmpty() }
-            ?: return showError(project, "Missing or malformed @Tag annotation.")
+            ?: return null
 
         val label = psiClass.name ?: "Run Test"
 
