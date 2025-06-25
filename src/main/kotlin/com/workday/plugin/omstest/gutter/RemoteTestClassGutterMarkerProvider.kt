@@ -18,7 +18,7 @@ class RemoteTestClassGutterMarkerProvider : LineMarkerProvider {
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
         if (element !is PsiIdentifier || element.parent !is PsiClass) return null
 
-        val target = TargetResolver.resolveClassTargetForIcon(element) ?: return null
+        val target = TargetResolver.resolveClassTargetQuietly(element) ?: return null
 
         return LineMarkerInfo(
             element,

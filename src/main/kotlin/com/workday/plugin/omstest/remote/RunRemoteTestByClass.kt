@@ -11,7 +11,7 @@ class RunRemoteTestByClass : AnAction() {
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
-        val target = TargetResolver.resolveClassTargetForIcon(e) ?: return
+        val target = TargetResolver.resolveClassTarget(e) ?: return
         RemoteTestExecutor.runRemoteTestClass(project, target.fqName, target.category, target.runTabName)
     }
 
