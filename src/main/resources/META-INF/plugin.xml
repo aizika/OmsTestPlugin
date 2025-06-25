@@ -40,24 +40,24 @@
                     class="com.workday.plugin.omstest.remote.RunRemoteTestByMethod"
                     text="Run Remote Test (Method)"
                     description="Run a test method on remote OMS via JMX"
-                    icon="AllIcons.Actions.Execute"/>
+                    icon="/icons/omsTestMethodIcon.svg"/>
             <action id="RunRemoteTestByClass"
                     class="com.workday.plugin.omstest.actions.RunRemoteTestByClass"
                     text="Run Remote Test (Class)"
                     description="Runs the test class remotely via OMS plugin"
-                    icon="AllIcons.Actions.Execute"/>
+                    icon="/icons/omsTestClassIcon.svg"/>
 
             <separator text="Local OMS"/>
             <action id="RunGradleTestByMethod"
                     class="com.workday.plugin.omstest.local.RunGradleTestByMethod"
                     text="Run Test (Method)"
                     description="Run selected test method via Gradle"
-                    icon="AllIcons.Actions.Execute"/>
+                    icon="/icons/omsTestMethodIcon.svg"/>
             <action id="RunGradleTestByClass"
                     class="com.workday.plugin.omstest.local.RunGradleTestByClass"
                     text="Run Test (Class)"
                     description="Run selected test class via Gradle"
-                    icon="AllIcons.Actions.Execute"/>
+                    icon="/icons/omsTestClassIcon.svg"/>
 
             <separator/>
             <action id="ReRunLastTest"
