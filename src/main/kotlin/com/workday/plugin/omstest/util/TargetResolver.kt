@@ -50,7 +50,7 @@ object TargetResolver {
 
     fun resolveMethodTarget(e: AnActionEvent): MethodTarget? {
         val context = TargetResolverUtil.resolveCommonContext(e) ?: return null
-        return resolveMethodTargetCommon(context.element);
+        return resolveMethodTargetCommon(context.element)
     }
 
     private fun resolveMethodTargetCommon(element: PsiElement): MethodTarget? {
@@ -59,8 +59,6 @@ object TargetResolver {
             is PsiIdentifier -> element.parent as? PsiMethod
             else -> PsiTreeUtil.getParentOfType(element, PsiMethod::class.java)
         } ?: return null
-
-        val project = element.project
 
         if (element != method.nameIdentifier) return null
 
@@ -119,7 +117,7 @@ object TargetResolverUtil {
             ?: showError(psiClass.project, "Cannot determine qualified class name.")
     }
 
-    fun showError(project: Project, message: String, quiet: Boolean = false): Nothing? {
+    fun showError(project: Project, message: String): Nothing? {
         if (!ErrorHandlingContext.isQuiet()) {
             Messages.showErrorDialog(project, message, "Test Resolver Error")
         }
