@@ -38,23 +38,14 @@ class JunitTestPanel {
                 override fun getProcessInput(): OutputStream? = null
             }
             ParsedResultConsole().initAndShow(project, processHandler)
-            if (true) {
-                Executors.newSingleThreadScheduledExecutor().schedule({
-                    val results = JunitResultParser().parseResultFile(logFile)
-                    ApplicationManager.getApplication().invokeLater {
-                        displayResults(results, processHandler)
-                    }
-                }, 500, TimeUnit.MILLISECONDS)
-            }
-            if (false) {
-                Executors.newSingleThreadScheduledExecutor().schedule({
-                    val suite = JunitResultParser().parseTestSuite(logFile)
-                    ApplicationManager.getApplication().invokeLater {
-                        suite?.let { displayTestSuiteResult(it, processHandler) }
-                    }
-                }, 500, TimeUnit.MILLISECONDS)
-            }
+            Executors.newSingleThreadScheduledExecutor().schedule({
+                val suite = JunitResultParser().parseTestSuite(logFile)
+                ApplicationManager.getApplication().invokeLater {
+                    suite?.let { displayTestSuiteResult(it, processHandler) }
+                }
+            }, 500, TimeUnit.MILLISECONDS)
         }
+
     }
 
     private fun displayTestSuiteResult(suite: TestSuite, processHandler: ProcessHandler) {
@@ -81,13 +72,13 @@ class JunitTestPanel {
         // Optionally, you could log summary metadata if desired:
         // (not standard TeamCity format, just informative text)
         processHandler.notifyTextAvailable(
-            "##teamcity[message text='Suite Summary: tests=${suite.tests}, failures=${suite.failures}, errors=${suite.errors}, skipped=${suite.skipped}, time=${suite.time}, status=${suite.status}, duration=123 ']\n",
+            "##teamcity[message text='Suite Summary: tests=${suite.tests}, failures=${suite.failures}, errors=${suite.errors}, skipped=${suite.skipped}, time=${suite.timeMillisStr}, status=${suite.status}, duration=123 ']\n",
             ProcessOutputTypes.STDOUT
         )
 
         // End the test suite
         processHandler.notifyTextAvailable(
-            "##teamcity[testSuiteFinished name='${suite.name}' duration=123.456 ]\n",
+            "##teamcity[testSuiteFinished name='${suite.name}' duration='${suite.timeMillisStr}' ]\n",
             ProcessOutputTypes.STDOUT
         )
 
@@ -102,11 +93,6 @@ class JunitTestPanel {
                 .replace("\r", "|r")
                 .replace("[", "|[")
                 .replace("]", "|]")
-
-//        processHandler.notifyTextAvailable(
-//            "##teamcity[testSuiteStarted name='PPPPPPP']\n",
-//            ProcessOutputTypes.STDOUT
-//        )
 
         for ((_, result) in results) {
             processHandler.notifyTextAvailable(
@@ -141,20 +127,12 @@ class JunitTestPanel {
                 else -> {}
             }
 
-//            processHandler.notifyTextAvailable(
-//                "##teamcity[message='${result.name}'  duration='987.431']\n",
-//                ProcessOutputTypes.STDOUT
-//            )
             processHandler.notifyTextAvailable(
                 "##teamcity[testFinished name='${result.name}' duration='${result.timeInMillisStr}']\n",
                 ProcessOutputTypes.STDOUT
             )
         }
 
-//        processHandler.notifyTextAvailable(
-//            "##teamcity[testSuiteFinished name='ParsedSuite' duration='1.23']\n",
-//            ProcessOutputTypes.STDOUT
-//        )
         processHandler.destroyProcess()
     }
 }

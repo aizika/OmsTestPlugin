@@ -12,21 +12,21 @@ import javax.xml.parsers.DocumentBuilderFactory
  */
 class JunitResultParser {
 
-    fun parseResultFile(file: File): Map<String, JunitTestResult> {
-        val docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-        val doc = docBuilder.parse(file)
-        val root = doc.documentElement
-        val testCases = root.getElementsByTagName("testcase")
-
-        val results = mutableMapOf<String, JunitTestResult>()
-        for (i in 0 until testCases.length) {
-            val testCaseElement = testCases.item(i) as Element
-            val result = parseTestCase(testCaseElement)
-            val key = "${result.className}#${result.name}"
-            results[key] = result
-        }
-        return results
-    }
+//    fun parseResultFile(file: File): Map<String, JunitTestResult> {
+//        val docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+//        val doc = docBuilder.parse(file)
+//        val root = doc.documentElement
+//        val testCases = root.getElementsByTagName("testcase")
+//
+//        val results = mutableMapOf<String, JunitTestResult>()
+//        for (i in 0 until testCases.length) {
+//            val testCaseElement = testCases.item(i) as Element
+//            val result = parseTestCase(testCaseElement)
+//            val key = "${result.className}#${result.name}"
+//            results[key] = result
+//        }
+//        return results
+//    }
 
     fun parseTestSuite(file: File): TestSuite? {
         val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
@@ -39,13 +39,15 @@ class JunitResultParser {
             results += parseTestCase(testCaseElement)
         }
 
+        val time = suiteElement.getAttribute("time")
+
         return TestSuite(
             name = suiteElement.getAttribute("name"),
             tests = suiteElement.getAttribute("tests").toIntOrNull() ?: 0,
             skipped = suiteElement.getAttribute("skipped").toIntOrNull() ?: 0,
             failures = suiteElement.getAttribute("failures").toIntOrNull() ?: 0,
             errors = suiteElement.getAttribute("errors").toIntOrNull() ?: 0,
-            time = suiteElement.getAttribute("time"),
+            timeMillisStr =  ( 1000.times(time.toDoubleOrNull()?:0.toDouble()) ).toInt().toString(),
             hostname = suiteElement.getAttribute("hostname"),
             timestamp = suiteElement.getAttribute("timestamp"),
             results = results,
@@ -147,7 +149,7 @@ data class TestSuite(
     val skipped: Int,
     val failures: Int,
     val errors: Int,
-    val time: String,
+    val timeMillisStr: String,
     val hostname: String?,
     val timestamp: String?,
     val status: String?,

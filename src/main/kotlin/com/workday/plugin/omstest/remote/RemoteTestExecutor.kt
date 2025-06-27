@@ -10,12 +10,9 @@ import com.intellij.notification.Notification
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.workday.plugin.omstest.junit.JunitTestPanel
 import com.workday.plugin.omstest.util.LastTestStorage
-import java.io.File
 
 /**
  * Utility object for running remote tests on a specified host.
@@ -99,7 +96,6 @@ object RemoteTestExecutor {
             runCommand(sshCommand, consoleView, "Running test on $host")
             runCommand(scpCommand, consoleView, "Fetching logs from $host")
             notification.expire()
-            printTestResultLinks(project, consoleView)
             JunitTestPanel().displayParsedResults(project)
         }
     }
@@ -122,29 +118,6 @@ object RemoteTestExecutor {
             .also { it.notify(project) }
     }
 
-    fun printTestResultLinks(project: Project, consoleView: ConsoleView) {
-        val basePath = project.basePath ?: return
-        val testFiles = listOf(
-            "TEST-junit-jupiter.xml",
-            "TEST-junit-platform-suite.xml"
-        )
-
-        for (fileName in testFiles) {
-            val file = File(basePath, fileName)
-            if (file.exists()) {
-                val virtualFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file)
-                if (virtualFile != null) {
-                    consoleView.printHyperlink("Open $fileName") {
-                        FileEditorManager.getInstance(project).openFile(virtualFile, true)
-                    }
-                    consoleView.print("\n", ConsoleViewContentType.NORMAL_OUTPUT)
-                } else {
-                    consoleView.print("File not found: $fileName\n", ConsoleViewContentType.ERROR_OUTPUT)
-                }
-            }
-        }
-    }
-
     private fun runCommand(command: String, console: ConsoleView, title: String) {
         console.print("\n> $title\n", ConsoleViewContentType.SYSTEM_OUTPUT)
         try {
@@ -152,14 +125,14 @@ object RemoteTestExecutor {
                 .redirectErrorStream(true)
                 .start()
 
-            process.inputStream.bufferedReader().lines().forEach { line ->
-                console.print("$line\n", ConsoleViewContentType.NORMAL_OUTPUT)
-            }
+//            process.inputStream.bufferedReader().lines().forEach { line ->
+//                console.print("$line\n", ConsoleViewContentType.NORMAL_OUTPUT)
+//            }
 
             val exitCode = process.waitFor()
-            console.print("Process exited with code $exitCode\n", ConsoleViewContentType.SYSTEM_OUTPUT)
+//            console.print("Process exited with code $exitCode\n", ConsoleViewContentType.SYSTEM_OUTPUT)
         } catch (e: Exception) {
-            console.print("Error: ${e.message}\n", ConsoleViewContentType.ERROR_OUTPUT)
+//            console.print("Error: ${e.message}\n", ConsoleViewContentType.ERROR_OUTPUT)
         }
     }
 }
