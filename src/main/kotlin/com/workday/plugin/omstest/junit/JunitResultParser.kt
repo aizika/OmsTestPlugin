@@ -28,6 +28,31 @@ class JunitResultParser {
         return results
     }
 
+    fun parseTestSuite(file: File): TestSuite? {
+        val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
+        val suiteElement = document.getElementsByTagName("testsuite").item(0) as? Element ?: return null
+
+        val testCases = suiteElement.getElementsByTagName("testcase")
+        val results = mutableListOf<JunitTestResult>()
+        for (i in 0 until testCases.length) {
+            val testCaseElement = testCases.item(i) as Element
+            results += parseTestCase(testCaseElement)
+        }
+
+        return TestSuite(
+            name = suiteElement.getAttribute("name"),
+            tests = suiteElement.getAttribute("tests").toIntOrNull() ?: 0,
+            skipped = suiteElement.getAttribute("skipped").toIntOrNull() ?: 0,
+            failures = suiteElement.getAttribute("failures").toIntOrNull() ?: 0,
+            errors = suiteElement.getAttribute("errors").toIntOrNull() ?: 0,
+            time = suiteElement.getAttribute("time"),
+            hostname = suiteElement.getAttribute("hostname"),
+            timestamp = suiteElement.getAttribute("timestamp"),
+            results = results,
+            status = "NORMAL"
+        )
+    }
+
     private fun parseTestCase(testCaseElement: Element): JunitTestResult {
         val name = testCaseElement.getAttribute("name")
         val className = testCaseElement.getAttribute("classname")
@@ -114,4 +139,17 @@ data class JunitTestResult(
     val skippedMessage: String? = null,
     val systemOut: String? = null,
     val systemErr: String? = null
+)
+
+data class TestSuite(
+    val name: String,
+    val tests: Int,
+    val skipped: Int,
+    val failures: Int,
+    val errors: Int,
+    val time: String,
+    val hostname: String?,
+    val timestamp: String?,
+    val status: String?,
+    val results: List<JunitTestResult>
 )
