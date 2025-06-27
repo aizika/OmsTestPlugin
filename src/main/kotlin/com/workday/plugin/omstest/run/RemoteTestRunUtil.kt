@@ -65,7 +65,6 @@ fun startTestExecutionUI(project: Project): Pair<RemoteTestProcessHandler, Conso
     }
 
     val consoleView = SMTestRunnerConnectionUtil.createAndAttachConsole("RemoteTest", handler, consoleProps)
-//    val consoleView = SMTestRunnerConnectionUtil.createAndAttachConsole("RemoteTest", handler, properties)
 
     // ✅ Launch the UI
     ProgramRunnerUtil.executeConfiguration(environment, false, true)
