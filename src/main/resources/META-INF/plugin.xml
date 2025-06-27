@@ -28,12 +28,6 @@
                 implementationClass="com.workday.plugin.omstest.gutter.RemoteTestClassGutterMarkerProvider"/>
     </extensions>
     <actions>
-        <action id="com.workday.plugin.omstest.junit.ShowTestTreeAction"
-                class="com.workday.plugin.omstest.junit.ShowTestTreeAction"
-                text="DummyPrint"
-                description="Run a dummy test output to verify Run tool integration">
-            <add-to-group group-id="ToolsMenu" anchor="last"/>
-        </action>
         <group id="OmsTestActionsGroup"
                class="com.workday.plugin.omstest.OmsTestActionsGroup"
                text="OMS Gradle Test"

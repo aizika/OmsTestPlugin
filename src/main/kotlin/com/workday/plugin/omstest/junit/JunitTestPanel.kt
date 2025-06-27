@@ -1,163 +1,115 @@
 package com.workday.plugin.omstest.junit
 
-import com.intellij.execution.Executor
-import com.intellij.execution.Location
-import com.intellij.execution.configurations.ConfigurationFactory
-import com.intellij.execution.configurations.ConfigurationType
-import com.intellij.execution.configurations.RunConfiguration
-import com.intellij.execution.configurations.RunConfigurationBase
-import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
-import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.execution.testframework.sm.SMTestRunnerConnectionUtil
-import com.intellij.execution.testframework.sm.runner.SMTRunnerConsoleProperties
-import com.intellij.execution.testframework.sm.runner.SMTestLocator
+import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.RunContentDescriptor
-import com.intellij.icons.AllIcons
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.options.SettingsEditor
+import com.intellij.execution.ui.RunContentManager
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiElement
-import com.intellij.psi.search.GlobalSearchScope
 import java.io.File
-import java.io.OutputStream
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-
-class ShowTestTreeAction : AnAction() {
-    override fun actionPerformed(e: AnActionEvent) {
-        val project = e.project ?: return
-
-        val dummyConfig = DummyRunConfiguration(project)
-
-        val consoleProperties = object : SMTRunnerConsoleProperties(
-            dummyConfig,
-            "DummyFramework",
-            DefaultRunExecutor.getRunExecutorInstance()
-        ) {
-            override fun getTestLocator(): SMTestLocator = NoOpTestLocator
-        }
-
-        val consoleView = SMTestRunnerConnectionUtil.createConsole("DummyFramework", consoleProperties)
-        val processHandler = TestConsoleProcessHandler()
-        consoleView.attachToProcess(processHandler)
-
-        val executor = DefaultRunExecutor.getRunExecutorInstance()
-        val descriptor = RunContentDescriptor(consoleView, processHandler, consoleView.component, "Dummy Test Run")
-        consoleView.allowHeavyFilters()
-
-        val manager = com.intellij.execution.impl.ExecutionManagerImpl.getInstance(project)
-        manager.getContentManager().showRunContent(executor, descriptor)
-
-        // Emit test messages from parsed file
-        Executors.newSingleThreadScheduledExecutor().schedule({
-            val file = File("/mnt/data/TEST-junit-jupiter.xml")
-            val results = JunitResultParser().parseResultFile(file)
-
-            processHandler.notifyTextAvailable(
-                "##teamcity[testSuiteStarted name='ParsedSuite']\n",
-                ProcessOutputTypes.STDOUT
-            )
-            for ((_, result) in results) {
-                processHandler.notifyTextAvailable(
-                    "##teamcity[testStarted name='${result.name}']\n",
-                    ProcessOutputTypes.STDOUT
-                )
-
-                when (result.status) {
-                    Status.FAILED -> processHandler.notifyTextAvailable(
-                        "##teamcity[testFailed name='${result.name}' message='${result.failureMessage ?: "Failed"}' details='${
-                            result.failureDetails?.replace(
-                                "\n",
-                                " "
-                            ) ?: ""
-                        }']\n",
-                        ProcessOutputTypes.STDOUT
-                    )
-
-                    Status.ERROR -> processHandler.notifyTextAvailable(
-                        "##teamcity[testFailed name='${result.name}' message='${result.errorMessage ?: "Error"}' details='${
-                            result.errorDetails?.replace(
-                                "\n",
-                                " "
-                            ) ?: ""
-                        }']\n",
-                        ProcessOutputTypes.STDOUT
-                    )
-
-                    Status.SKIPPED -> processHandler.notifyTextAvailable(
-                        "##teamcity[testIgnored name='${result.name}' message='${result.skippedMessage ?: "Skipped"}']\n",
-                        ProcessOutputTypes.STDOUT
-                    )
-
-                    else -> {} // PASSED
-                }
-
-                processHandler.notifyTextAvailable(
-                    "##teamcity[testFinished name='${result.name}']\n",
-                    ProcessOutputTypes.STDOUT
-                )
-            }
-            processHandler.notifyTextAvailable(
-                "##teamcity[testSuiteFinished name='ParsedSuite']\n",
-                ProcessOutputTypes.STDOUT
-            )
-            processHandler.destroyProcess()
-        }, 500, TimeUnit.MILLISECONDS)
-    }
-}
-
-class TestConsoleProcessHandler    : ProcessHandler() {
-    override fun destroyProcessImpl() = notifyProcessTerminated(0)
-    override fun detachProcessImpl() = notifyProcessDetached()
-    override fun detachIsDefault(): Boolean = false
-    override fun getProcessInput(): OutputStream? = null
-}
+private const val TEST_JUNIT_JUPITER_XML = "TEST-junit-jupiter.xml"
 
 /**
- * No-op implementation of SMTestLocator.
- * Required by the IntelliJ test runner infrastructure, but this implementation
- * disables source navigation by returning no locations. Used when test results
- * are parsed from external sources without corresponding PSI elements.
+ * A panel for displaying parsed JUnit test results in the IntelliJ test runner console.
+ * This class reads a JMX test result file, parses it, and displays the results in a structured format
+ * as if they were real JUnit test results.
+ *
+ * @author alexander.aizikivsky
+ * @since Jun-2025
  */
-object NoOpTestLocator : SMTestLocator {
-    override fun getLocation(
-        protocol: String,
-        path: String,
-        project: Project,
-        scope: GlobalSearchScope
-    ): List<Location<out PsiElement>> {
-        return emptyList()
-    }
-}
+class JunitTestPanel {
 
-// --- Minimal RunConfiguration infrastructure ---
-class DummyRunConfiguration(project: Project) : RunConfigurationBase<RunProfileState>(
-    project,
-    DummyConfigurationFactory(),
-    "DummyRunConfig"
-) {
-    override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState? = null
-    override fun getConfigurationEditor(): SettingsEditor<out RunConfiguration?> {
-        TODO("Not yet implemented")
-    }
-}
+    /**
+     * Displays parsed JUnit test results from a file in the IntelliJ test runner console.
+     *
+     * @param project The current IntelliJ project.
+     */
+    fun displayParsedResults(project: Project) {
+        val file = File(project.basePath, TEST_JUNIT_JUPITER_XML)
+        if (!file.exists()) return
 
-class DummyConfigurationFactory : ConfigurationFactory(DummyConfigurationType) {
-    override fun createTemplateConfiguration(project: Project): RunConfiguration {
-        return DummyRunConfiguration(project)
-    }
-}
+        ApplicationManager.getApplication().invokeLater {
+            val (consoleView, processHandler) = ParsedResultConsole().createConsole1(project)
 
-object DummyConfigurationType : ConfigurationType {
-    override fun getDisplayName(): String = "Dummy"
-    override fun getConfigurationTypeDescription(): String = "Dummy configuration type"
-    override fun getId(): String = "DUMMY_CONFIG"
-    override fun getIcon() = AllIcons.General.Information
-    override fun getConfigurationFactories(): Array<ConfigurationFactory> =
-        arrayOf(DummyConfigurationFactory())
+            showConsole(project, consoleView, processHandler)
+
+            Executors.newSingleThreadScheduledExecutor().schedule({
+                val results = JunitResultParser().parseResultFile(file)
+                ApplicationManager.getApplication().invokeLater {
+                    displayResultsToConsole(results, processHandler)
+                }
+            }, 500, TimeUnit.MILLISECONDS)
+        }
+    }
+
+    private fun showConsole(project: Project, consoleView: ConsoleView, processHandler: ProcessHandler) {
+        val descriptor = RunContentDescriptor(consoleView, processHandler, consoleView.component, "Parsed Test Results")
+        RunContentManager.getInstance(project)
+            .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
+    }
+
+    private fun displayResultsToConsole(results: Map<String, JunitTestResult>, processHandler: ProcessHandler) {
+        fun escapeTc(s: String): String =
+            s.replace("|", "||")
+                .replace("'", "|'")
+                .replace("\n", "|n")
+                .replace("\r", "|r")
+                .replace("[", "|[")
+                .replace("]", "|]")
+
+        processHandler.notifyTextAvailable(
+            "##teamcity[testSuiteStarted name='ParsedSuite']\n",
+            ProcessOutputTypes.STDOUT
+        )
+
+        for ((_, result) in results) {
+            processHandler.notifyTextAvailable(
+                "##teamcity[testStarted name='${result.name}']\n",
+                ProcessOutputTypes.STDOUT
+            )
+
+            when (result.status) {
+                Status.FAILED -> processHandler.notifyTextAvailable(
+                    "##teamcity[testFailed name='${result.name}' message='${escapeTc(result.failureMessage ?: "Failed")}' details='${
+                        escapeTc(
+                            result.failureDetails ?: ""
+                        )
+                    }']\n",
+                    ProcessOutputTypes.STDOUT
+                )
+
+                Status.ERROR -> processHandler.notifyTextAvailable(
+                    "##teamcity[testFailed name='${result.name}' message='${escapeTc(result.errorMessage ?: "Error")}' details='${
+                        escapeTc(
+                            result.errorDetails ?: ""
+                        )
+                    }']\n",
+                    ProcessOutputTypes.STDOUT
+                )
+
+                Status.SKIPPED -> processHandler.notifyTextAvailable(
+                    "##teamcity[testIgnored name='${result.name}' message='${escapeTc(result.skippedMessage ?: "Skipped")}']\n",
+                    ProcessOutputTypes.STDOUT
+                )
+
+                else -> {}
+            }
+
+            processHandler.notifyTextAvailable(
+                "##teamcity[testFinished name='${result.name}']\n",
+                ProcessOutputTypes.STDOUT
+            )
+        }
+
+        processHandler.notifyTextAvailable(
+            "##teamcity[testSuiteFinished name='ParsedSuite']\n",
+            ProcessOutputTypes.STDOUT
+        )
+        processHandler.destroyProcess()
+    }
 }
