@@ -31,7 +31,7 @@ import java.io.OutputStream
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-class ShowTestTreeAction : AnAction("Show Dummy Test Tree") {
+class ShowTestTreeAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
 
@@ -50,9 +50,6 @@ class ShowTestTreeAction : AnAction("Show Dummy Test Tree") {
         consoleView.attachToProcess(processHandler)
 
         val executor = DefaultRunExecutor.getRunExecutorInstance()
-        val runner = ProgramRunner.getRunner(executor.id, dummyConfig)
-            ?: throw ExecutionException("No suitable runner found")
-
         val descriptor = RunContentDescriptor(consoleView, processHandler, consoleView.component, "Dummy Test Run")
         consoleView.allowHeavyFilters()
 

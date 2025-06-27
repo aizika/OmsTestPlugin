@@ -19,7 +19,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.workday.plugin.omstest.junit.DummyRunConfiguration
 import com.workday.plugin.omstest.junit.DummyTestLocator
-import com.workday.plugin.omstest.parser.JunitTestResult
 import com.workday.plugin.omstest.parser.Status
 import com.workday.plugin.omstest.parser.parseResultFile
 import com.workday.plugin.omstest.util.LastTestStorage
@@ -131,16 +130,23 @@ object RemoteTestExecutor {
             }
             consoleView.attachToProcess(processHandler)
 
-            val descriptor = RunContentDescriptor(consoleView, processHandler, consoleView.component, "Parsed Test Results")
+            val descriptor =
+                RunContentDescriptor(consoleView, processHandler, consoleView.component, "Parsed Test Results")
             RunContentManager.getInstance(project)
                 .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
 
             Executors.newSingleThreadScheduledExecutor().schedule({
                 val results = parseResultFile(file)
                 ApplicationManager.getApplication().invokeLater {
-                    processHandler.notifyTextAvailable("##teamcity[testSuiteStarted name='ParsedSuite']\n", ProcessOutputTypes.STDOUT)
+                    processHandler.notifyTextAvailable(
+                        "##teamcity[testSuiteStarted name='ParsedSuite']\n",
+                        ProcessOutputTypes.STDOUT
+                    )
                     for ((_, result) in results) {
-                        processHandler.notifyTextAvailable("##teamcity[testStarted name='${result.name}']\n", ProcessOutputTypes.STDOUT)
+                        processHandler.notifyTextAvailable(
+                            "##teamcity[testStarted name='${result.name}']\n",
+                            ProcessOutputTypes.STDOUT
+                        )
 
                         fun escapeTc(s: String): String =
                             s.replace("|", "||")
@@ -152,28 +158,46 @@ object RemoteTestExecutor {
 
                         when (result.status) {
                             Status.FAILED -> processHandler.notifyTextAvailable(
-                                "##teamcity[testFailed name='${result.name}' message='${escapeTc(result.failureMessage ?: "Failed")}' details='${escapeTc(result.failureDetails ?: "")}']\n",
+                                "##teamcity[testFailed name='${result.name}' message='${escapeTc(result.failureMessage ?: "Failed")}' details='${
+                                    escapeTc(
+                                        result.failureDetails ?: ""
+                                    )
+                                }']\n",
                                 ProcessOutputTypes.STDOUT
                             )
+
                             Status.ERROR -> processHandler.notifyTextAvailable(
-                                "##teamcity[testFailed name='${result.name}' message='${escapeTc(result.errorMessage ?: "Error")}' details='${escapeTc(result.errorDetails ?: "")}']\n",
+                                "##teamcity[testFailed name='${result.name}' message='${escapeTc(result.errorMessage ?: "Error")}' details='${
+                                    escapeTc(
+                                        result.errorDetails ?: ""
+                                    )
+                                }']\n",
                                 ProcessOutputTypes.STDOUT
                             )
+
                             Status.SKIPPED -> processHandler.notifyTextAvailable(
                                 "##teamcity[testIgnored name='${result.name}' message='${escapeTc(result.skippedMessage ?: "Skipped")}']\n",
                                 ProcessOutputTypes.STDOUT
                             )
+
                             else -> {}
                         }
 
-                        processHandler.notifyTextAvailable("##teamcity[testFinished name='${result.name}']\n", ProcessOutputTypes.STDOUT)
+                        processHandler.notifyTextAvailable(
+                            "##teamcity[testFinished name='${result.name}']\n",
+                            ProcessOutputTypes.STDOUT
+                        )
                     }
-                    processHandler.notifyTextAvailable("##teamcity[testSuiteFinished name='ParsedSuite']\n", ProcessOutputTypes.STDOUT)
+                    processHandler.notifyTextAvailable(
+                        "##teamcity[testSuiteFinished name='ParsedSuite']\n",
+                        ProcessOutputTypes.STDOUT
+                    )
                     processHandler.destroyProcess()
                 }
             }, 500, TimeUnit.MILLISECONDS)
         }
     }
+
     private fun buildSshCommand(host: String, jmxInput: String): String = """
         ssh -o StrictHostKeyChecking=accept-new root@$host \
         "docker exec ots-17-17 mkdir -p /usr/local/workday-oms/logs/junit && \
