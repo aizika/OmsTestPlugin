@@ -76,7 +76,7 @@ class JunitResultParser {
         return JunitTestResult(
             name = name,
             className = className,
-            time = time,
+            timeInMillisStr = ( 1000.times(time.toDoubleOrNull()?:0.toDouble()) ).toInt().toString(),
             status = status,
             failureMessage = failureMessage,
             failureDetails = failureDetails,
@@ -117,7 +117,7 @@ enum class Status {
  *
  * @property name The name of the test method.
  * @property className The fully qualified name of the test class.
- * @property time The time taken to run the test, or null if not available.
+ * @property timeInMillisStr The time taken to run the test, or null if not available.
  * @property status The status of the test (PASSED, FAILED, SKIPPED, ERROR).
  * @property failureMessage The message associated with a failure, if any.
  * @property failureDetails Additional details about the failure, if any.
@@ -130,7 +130,7 @@ enum class Status {
 data class JunitTestResult(
     val name: String,
     val className: String,
-    val time: String?,
+    val timeInMillisStr: String? = null,
     val status: Status,
     val failureMessage: String? = null,
     val failureDetails: String? = null,

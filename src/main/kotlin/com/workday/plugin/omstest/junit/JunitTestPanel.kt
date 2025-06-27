@@ -1,14 +1,11 @@
 package com.workday.plugin.omstest.junit
 
-import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
-import com.intellij.execution.ui.ConsoleView
-import com.intellij.execution.ui.RunContentDescriptor
-import com.intellij.execution.ui.RunContentManager
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import java.io.File
+import java.io.OutputStream
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -30,30 +27,37 @@ class JunitTestPanel {
      * @param project The current IntelliJ project.
      */
     fun displayParsedResults(project: Project) {
-        val file = File(project.basePath, TEST_JUNIT_JUPITER_XML)
-        if (!file.exists()) return
+        val logFile = File(project.basePath, TEST_JUNIT_JUPITER_XML)
+        if (!logFile.exists()) return
 
         ApplicationManager.getApplication().invokeLater {
-            val (consoleView, processHandler) = ParsedResultConsole().createConsole1(project)
-
-            showConsole(project, consoleView, processHandler)
-
-            Executors.newSingleThreadScheduledExecutor().schedule({
-                val results = JunitResultParser().parseResultFile(file)
-                ApplicationManager.getApplication().invokeLater {
-                    displayResultsToConsole(results, processHandler)
-                }
-            }, 500, TimeUnit.MILLISECONDS)
+            val processHandler = object : ProcessHandler() {
+                override fun destroyProcessImpl() = notifyProcessTerminated(0)
+                override fun detachProcessImpl() = notifyProcessDetached()
+                override fun detachIsDefault(): Boolean = false
+                override fun getProcessInput(): OutputStream? = null
+            }
+            ParsedResultConsole().initAndShow(project, processHandler)
+            if (true) {
+                Executors.newSingleThreadScheduledExecutor().schedule({
+                    val results = JunitResultParser().parseResultFile(logFile)
+                    ApplicationManager.getApplication().invokeLater {
+                        displayResults(results, processHandler)
+                    }
+                }, 500, TimeUnit.MILLISECONDS)
+            }
+            if (false) {
+                Executors.newSingleThreadScheduledExecutor().schedule({
+                    val suite = JunitResultParser().parseTestSuite(logFile)
+                    ApplicationManager.getApplication().invokeLater {
+                        suite?.let { displayTestSuiteResult(it, processHandler) }
+                    }
+                }, 500, TimeUnit.MILLISECONDS)
+            }
         }
     }
 
-    private fun showConsole(project: Project, consoleView: ConsoleView, processHandler: ProcessHandler) {
-        val descriptor = RunContentDescriptor(consoleView, processHandler, consoleView.component, "Parsed Test Results")
-        RunContentManager.getInstance(project)
-            .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
-    }
-
-    private fun displayResultsToConsole(results: Map<String, JunitTestResult>, processHandler: ProcessHandler) {
+    private fun displayTestSuiteResult(suite: TestSuite, processHandler: ProcessHandler) {
         fun escapeTc(s: String): String =
             s.replace("|", "||")
                 .replace("'", "|'")
@@ -62,10 +66,47 @@ class JunitTestPanel {
                 .replace("[", "|[")
                 .replace("]", "|]")
 
+        val suiteName = escapeTc(suite.name)
+
+        // Start the test suite
         processHandler.notifyTextAvailable(
-            "##teamcity[testSuiteStarted name='ParsedSuite']\n",
+            "##teamcity[testSuiteStarted name='$suiteName']\n",
             ProcessOutputTypes.STDOUT
         )
+
+        // Display all test results
+        val results = suite.results.associateBy { it.name }
+        displayResults(results, processHandler)
+
+        // Optionally, you could log summary metadata if desired:
+        // (not standard TeamCity format, just informative text)
+        processHandler.notifyTextAvailable(
+            "##teamcity[message text='Suite Summary: tests=${suite.tests}, failures=${suite.failures}, errors=${suite.errors}, skipped=${suite.skipped}, time=${suite.time}, status=${suite.status}, duration=123 ']\n",
+            ProcessOutputTypes.STDOUT
+        )
+
+        // End the test suite
+        processHandler.notifyTextAvailable(
+            "##teamcity[testSuiteFinished name='${suite.name}' duration=123.456 ]\n",
+            ProcessOutputTypes.STDOUT
+        )
+
+        processHandler.destroyProcess()
+    }
+
+    private fun displayResults(results: Map<String, JunitTestResult>, processHandler: ProcessHandler) {
+        fun escapeTc(s: String): String =
+            s.replace("|", "||")
+                .replace("'", "|'")
+                .replace("\n", "|n")
+                .replace("\r", "|r")
+                .replace("[", "|[")
+                .replace("]", "|]")
+
+//        processHandler.notifyTextAvailable(
+//            "##teamcity[testSuiteStarted name='PPPPPPP']\n",
+//            ProcessOutputTypes.STDOUT
+//        )
 
         for ((_, result) in results) {
             processHandler.notifyTextAvailable(
@@ -100,16 +141,20 @@ class JunitTestPanel {
                 else -> {}
             }
 
+//            processHandler.notifyTextAvailable(
+//                "##teamcity[message='${result.name}'  duration='987.431']\n",
+//                ProcessOutputTypes.STDOUT
+//            )
             processHandler.notifyTextAvailable(
-                "##teamcity[testFinished name='${result.name}']\n",
+                "##teamcity[testFinished name='${result.name}' duration='${result.timeInMillisStr}']\n",
                 ProcessOutputTypes.STDOUT
             )
         }
 
-        processHandler.notifyTextAvailable(
-            "##teamcity[testSuiteFinished name='ParsedSuite']\n",
-            ProcessOutputTypes.STDOUT
-        )
+//        processHandler.notifyTextAvailable(
+//            "##teamcity[testSuiteFinished name='ParsedSuite' duration='1.23']\n",
+//            ProcessOutputTypes.STDOUT
+//        )
         processHandler.destroyProcess()
     }
 }

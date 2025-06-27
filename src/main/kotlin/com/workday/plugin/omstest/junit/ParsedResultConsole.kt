@@ -21,7 +21,6 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
-import java.io.OutputStream
 import javax.swing.JPanel
 
 /**
@@ -29,24 +28,33 @@ import javax.swing.JPanel
  */
 class ParsedResultConsole {
 
+//    companion object {
+//        fun create(project: Project, handler: ProcessHandler): ParsedResultConsole {
+//            val console = ParsedResultConsole()
+//            console.initAndShow(project, handler)
+//            return console
+//        }
+//    }
+
     var consoleView: ConsoleView? = null
         private set
 
     var processHandler: ProcessHandler? = null
         private set
 
-    fun show(project: Project): Pair<ConsoleView, ProcessHandler> {
-        val (view, handler) = createConsole1(project)
-        consoleView = view
+    fun initAndShow(project: Project, handler: ProcessHandler) {
         processHandler = handler
+        consoleView = createConsoleView(project, processHandler!!)
 
-        val descriptor = RunContentDescriptor(view, handler, view.component, "Parsed Test Results")
+        val descriptor = RunContentDescriptor(
+            consoleView, processHandler,
+            consoleView!!.component, "Parsed Test Results"
+        )
         RunContentManager.getInstance(project)
             .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
-        return Pair(view, handler)
     }
 
-    fun createConsole1(project: Project): Pair<ConsoleView, ProcessHandler> {
+    fun createConsoleView(project: Project, handler: ProcessHandler): ConsoleView {
         val config = ParsedResultRunConfiguration(project)
         val consoleProperties = object : SMTRunnerConsoleProperties(
             config,
@@ -57,15 +65,8 @@ class ParsedResultConsole {
         }
 
         val view = SMTestRunnerConnectionUtil.createConsole("ParsedResults", consoleProperties)
-        val handler = object : ProcessHandler() {
-            override fun destroyProcessImpl() = notifyProcessTerminated(0)
-            override fun detachProcessImpl() = notifyProcessDetached()
-            override fun detachIsDefault(): Boolean = false
-            override fun getProcessInput(): OutputStream? = null
-        }
-
         view.attachToProcess(handler)
-        return Pair(view, handler)
+        return view
     }
 
     private object NoOpTestLocator : SMTestLocator {
@@ -76,10 +77,12 @@ class ParsedResultConsole {
             scope: GlobalSearchScope
         ): List<Location<out PsiElement>> = emptyList()
     }
+
+
 }
 
 /**
- * Dummy RunConfiguration used for displaying parsed JUnit results in the test UI.
+ * RunConfiguration used for displaying parsed JUnit results in the test UI.
  */
 class ParsedResultRunConfiguration(project: Project) : RunConfigurationBase<RunProfileState>(
     project,
