@@ -22,12 +22,11 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
-import com.workday.plugin.omstest.parser.Status
-import com.workday.plugin.omstest.parser.parseResultFile
 import java.io.File
 import java.io.OutputStream
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+
 
 class ShowTestTreeAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
@@ -40,11 +39,11 @@ class ShowTestTreeAction : AnAction() {
             "DummyFramework",
             DefaultRunExecutor.getRunExecutorInstance()
         ) {
-            override fun getTestLocator(): SMTestLocator = DummyTestLocator
+            override fun getTestLocator(): SMTestLocator = NoOpTestLocator
         }
 
         val consoleView = SMTestRunnerConnectionUtil.createConsole("DummyFramework", consoleProperties)
-        val processHandler = DummyProcessHandler()
+        val processHandler = TestConsoleProcessHandler()
         consoleView.attachToProcess(processHandler)
 
         val executor = DefaultRunExecutor.getRunExecutorInstance()
@@ -57,7 +56,7 @@ class ShowTestTreeAction : AnAction() {
         // Emit test messages from parsed file
         Executors.newSingleThreadScheduledExecutor().schedule({
             val file = File("/mnt/data/TEST-junit-jupiter.xml")
-            val results = parseResultFile(file)
+            val results = JunitResultParser().parseResultFile(file)
 
             processHandler.notifyTextAvailable(
                 "##teamcity[testSuiteStarted name='ParsedSuite']\n",
@@ -112,16 +111,20 @@ class ShowTestTreeAction : AnAction() {
     }
 }
 
-// --- Dummy Process Handler ---
-class DummyProcessHandler : ProcessHandler() {
+class TestConsoleProcessHandler    : ProcessHandler() {
     override fun destroyProcessImpl() = notifyProcessTerminated(0)
     override fun detachProcessImpl() = notifyProcessDetached()
     override fun detachIsDefault(): Boolean = false
     override fun getProcessInput(): OutputStream? = null
 }
 
-// --- Dummy Test Locator (no hyperlinks) ---
-object DummyTestLocator : SMTestLocator {
+/**
+ * No-op implementation of SMTestLocator.
+ * Required by the IntelliJ test runner infrastructure, but this implementation
+ * disables source navigation by returning no locations. Used when test results
+ * are parsed from external sources without corresponding PSI elements.
+ */
+object NoOpTestLocator : SMTestLocator {
     override fun getLocation(
         protocol: String,
         path: String,

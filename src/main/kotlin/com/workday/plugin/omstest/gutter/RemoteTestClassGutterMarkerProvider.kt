@@ -11,6 +11,13 @@ import com.workday.plugin.omstest.remote.RemoteTestExecutor
 import com.workday.plugin.omstest.util.TargetResolver
 import javax.swing.Icon
 
+/**
+ * Provides a gutter marker for running remote OMS class tests.
+ * This marker appears next to class declarations in the editor.
+ *
+ * @author alexander.aizikivsky
+ * @since Jun-2025
+ */
 class RemoteTestClassGutterMarkerProvider : LineMarkerProvider {
 
     private val icon: Icon = IconLoader.getIcon("/icons/omsTestClassIcon.svg", javaClass)

@@ -6,6 +6,13 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.workday.plugin.omstest.util.TargetResolver
 import com.workday.plugin.omstest.util.VisibilityManager
 
+/**
+ * Action to run a remote test for the selected Java method in IntelliJ IDEA.
+ * Identifies the method at the caret position, then executes the test remotely.
+ *
+ * @author alexander.aizikivsky
+ * @since Jun-2025
+ */
 class RunRemoteTestByMethod : AnAction() {
 
     override fun actionPerformed(e: AnActionEvent) {

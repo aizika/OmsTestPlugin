@@ -7,6 +7,13 @@ import com.workday.plugin.omstest.remote.RemoteTestExecutor
 import com.workday.plugin.omstest.util.TargetResolver
 import com.workday.plugin.omstest.util.VisibilityManager
 
+/**
+ * Action to run a remote test for the selected Java class in IntelliJ IDEA.
+ * Identifies the class at the caret position, then executes the test remotely.
+ *
+ * @author alexander.aizikivsky
+ * @since Jun-2025
+ */
 class RunRemoteTestByClass : AnAction() {
 
     override fun actionPerformed(e: AnActionEvent) {

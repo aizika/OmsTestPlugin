@@ -6,6 +6,13 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.util.PsiTreeUtil
 
+/* * VisibilityManager.kt
+ * Utility to determine the visibility context of actions in the plugin.
+ *
+ * This file is part of the Workday Open Source Test Plugin.
+ * It provides methods to check if the current context is a class or method.
+ */
+
 object VisibilityManager {
 
     fun isClassContext(e: AnActionEvent): Boolean {

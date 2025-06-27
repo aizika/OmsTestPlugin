@@ -10,6 +10,13 @@ import javax.swing.JTextField
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 
+/**
+ * Dialog for prompting the user to enter a remote host.
+ * This dialog is used when running remote OMS tests.
+ *
+ * @author alexander.aizikivsky
+ * @since Jun-2025
+ */
 class HostPromptDialog : DialogWrapper(true) {
     private val panel = JPanel(BorderLayout())
     private val hostTextField = JTextField()

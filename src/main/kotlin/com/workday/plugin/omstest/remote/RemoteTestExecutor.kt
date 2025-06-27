@@ -18,15 +18,22 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.workday.plugin.omstest.junit.DummyRunConfiguration
-import com.workday.plugin.omstest.junit.DummyTestLocator
-import com.workday.plugin.omstest.parser.Status
-import com.workday.plugin.omstest.parser.parseResultFile
+import com.workday.plugin.omstest.junit.NoOpTestLocator
+import com.workday.plugin.omstest.junit.JunitResultParser
+import com.workday.plugin.omstest.junit.Status
 import com.workday.plugin.omstest.util.LastTestStorage
 import java.io.File
 import java.io.OutputStream
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
+/**
+ * Utility object for running remote tests on a specified host.
+ * Provides methods to run test classes and methods with JMX parameters.
+ *
+ * @author alexander.aizikivsky
+ * @since Jun-2025
+ */
 object RemoteTestExecutor {
 
     fun runRemoteTestClass(
@@ -118,7 +125,7 @@ object RemoteTestExecutor {
                 "ParsedResults",
                 DefaultRunExecutor.getRunExecutorInstance()
             ) {
-                override fun getTestLocator(): SMTestLocator = DummyTestLocator
+                override fun getTestLocator(): SMTestLocator = NoOpTestLocator
             }
 
             val consoleView = SMTestRunnerConnectionUtil.createConsole("ParsedResults", consoleProperties)
@@ -136,7 +143,7 @@ object RemoteTestExecutor {
                 .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
 
             Executors.newSingleThreadScheduledExecutor().schedule({
-                val results = parseResultFile(file)
+                val results = JunitResultParser().parseResultFile(file)
                 ApplicationManager.getApplication().invokeLater {
                     processHandler.notifyTextAvailable(
                         "##teamcity[testSuiteStarted name='ParsedSuite']\n",
@@ -210,19 +217,10 @@ object RemoteTestExecutor {
     }
 
     private fun notifyUser(project: Project): Notification {
-//        val notification = NotificationGroupManager.getInstance()
-//            .getNotificationGroup("OmsTest Notifications")
-//            .createNotification("Running remote test...", NotificationType.INFORMATION)
-//        notification.notify(project)
-//        return notification
         return NotificationGroupManager.getInstance()
             .getNotificationGroup("OmsTest Notifications")
             .createNotification("Running remote test...", NotificationType.INFORMATION)
             .also { it.notify(project) }
-//        val notification = NotificationGroupManager.getInstance()
-//            .getNotificationGroup("run.notifications") // This is a known valid built-in ID
-//            .createNotification("Running remote test...", NotificationType.INFORMATION)
-//        notification.notify(project)        return notification
     }
 
     fun printTestResultLinks(project: Project, consoleView: ConsoleView) {
