@@ -14,7 +14,7 @@ class RemoteTestMethodGutterMarkerProvider : LineMarkerProvider {
     private val icon: Icon = IconLoader.getIcon("/icons/omsTestMethodIcon.svg", javaClass)
 
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
-        val target = TargetResolver.resolveMethodTargetQuietly(element)?: return null
+        val target = TargetResolver.resolveMethodTargetQuietly(element) ?: return null
         return LineMarkerInfo(
             element,
             element.textRange,

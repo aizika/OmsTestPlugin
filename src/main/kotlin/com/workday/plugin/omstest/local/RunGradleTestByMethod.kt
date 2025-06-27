@@ -19,6 +19,7 @@ class RunGradleTestByMethod : AnAction() {
         val targetName = "-PtestMethod=${target.fqName}"
         LocalTestExecutor.runCommand(event.project, target.runTabName, targetName)
     }
+
     override fun update(e: AnActionEvent) {
         e.presentation.isEnabledAndVisible = VisibilityManager.isMethodContext(e)
     }

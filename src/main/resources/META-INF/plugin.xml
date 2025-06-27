@@ -11,11 +11,15 @@
         Adds right-click menu options to run Gradle tests by method, class, or package, with re-run support.
     </description>
 
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.modules.lang</depends>
+
     <extensions defaultExtensionNs="com.intellij">
-        <notificationGroup
-                id="OmsTest Notifications"
-                displayType="BALLOON"
-                isLogByDefault="true"/>
+        <notificationGroup id="OmsTest Notifications"
+                           displayType="BALLOON"
+                           isLogByDefault="true"
+                           toolWindowId="Run"/>
         <codeInsight.lineMarkerProvider
                 language="JAVA"
                 implementationClass="com.workday.plugin.omstest.gutter.RemoteTestMethodGutterMarkerProvider"/>
@@ -23,9 +27,13 @@
                 language="JAVA"
                 implementationClass="com.workday.plugin.omstest.gutter.RemoteTestClassGutterMarkerProvider"/>
     </extensions>
-    <depends>com.intellij.modules.platform</depends>
-    <depends>com.intellij.modules.java</depends>
     <actions>
+        <action id="com.workday.plugin.omstest.junit.ShowTestTreeAction"
+                class="com.workday.plugin.omstest.junit.ShowTestTreeAction"
+                text="DummyPrint"
+                description="Run a dummy test output to verify Run tool integration">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
         <group id="OmsTestActionsGroup"
                class="com.workday.plugin.omstest.OmsTestActionsGroup"
                text="OMS Gradle Test"

@@ -20,6 +20,7 @@ class RunGradleTestByClass : AnAction() {
         val targetName = "-PtestClass=${target.fqName}"
         LocalTestExecutor.runCommand(event.project, target.runTabName, targetName)
     }
+
     /**
      * Updates the action's enabled state based on the current context.
      * Enables the action if a Java class is found at the caret position.

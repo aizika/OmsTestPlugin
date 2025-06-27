@@ -2,6 +2,10 @@ package com.workday.plugin.omstest.remote
 
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.filters.TextConsoleBuilderFactory
+import com.intellij.execution.process.ProcessOutputTypes
+import com.intellij.execution.testframework.sm.SMTestRunnerConnectionUtil
+import com.intellij.execution.testframework.sm.runner.SMTRunnerConsoleProperties
+import com.intellij.execution.testframework.sm.runner.SMTestLocator
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.execution.ui.RunContentDescriptor
@@ -13,9 +17,16 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.workday.plugin.omstest.junit.DummyRunConfiguration
+import com.workday.plugin.omstest.junit.DummyTestLocator
+import com.workday.plugin.omstest.parser.JunitTestResult
+import com.workday.plugin.omstest.parser.Status
+import com.workday.plugin.omstest.parser.parseResultFile
 import com.workday.plugin.omstest.util.LastTestStorage
 import java.io.File
-
+import java.io.OutputStream
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 object RemoteTestExecutor {
 
@@ -93,9 +104,76 @@ object RemoteTestExecutor {
             runCommand(scpCommand, consoleView, "Fetching logs from $host")
             notification.expire()
             printTestResultLinks(project, consoleView)
+            displayParsedResults(project)
         }
     }
 
+    private fun displayParsedResults(project: Project) {
+        val file = File(project.basePath, "TEST-junit-jupiter.xml")
+        if (!file.exists()) return
+
+        ApplicationManager.getApplication().invokeLater {
+            val dummyConfig = DummyRunConfiguration(project)
+            val consoleProperties = object : SMTRunnerConsoleProperties(
+                dummyConfig,
+                "ParsedResults",
+                DefaultRunExecutor.getRunExecutorInstance()
+            ) {
+                override fun getTestLocator(): SMTestLocator = DummyTestLocator
+            }
+
+            val consoleView = SMTestRunnerConnectionUtil.createConsole("ParsedResults", consoleProperties)
+            val processHandler = object : com.intellij.execution.process.ProcessHandler() {
+                override fun destroyProcessImpl() = notifyProcessTerminated(0)
+                override fun detachProcessImpl() = notifyProcessDetached()
+                override fun detachIsDefault(): Boolean = false
+                override fun getProcessInput(): OutputStream? = null
+            }
+            consoleView.attachToProcess(processHandler)
+
+            val descriptor = RunContentDescriptor(consoleView, processHandler, consoleView.component, "Parsed Test Results")
+            RunContentManager.getInstance(project)
+                .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
+
+            Executors.newSingleThreadScheduledExecutor().schedule({
+                val results = parseResultFile(file)
+                ApplicationManager.getApplication().invokeLater {
+                    processHandler.notifyTextAvailable("##teamcity[testSuiteStarted name='ParsedSuite']\n", ProcessOutputTypes.STDOUT)
+                    for ((_, result) in results) {
+                        processHandler.notifyTextAvailable("##teamcity[testStarted name='${result.name}']\n", ProcessOutputTypes.STDOUT)
+
+                        fun escapeTc(s: String): String =
+                            s.replace("|", "||")
+                                .replace("'", "|'")
+                                .replace("\n", "|n")
+                                .replace("\r", "|r")
+                                .replace("[", "|[")
+                                .replace("]", "|]")
+
+                        when (result.status) {
+                            Status.FAILED -> processHandler.notifyTextAvailable(
+                                "##teamcity[testFailed name='${result.name}' message='${escapeTc(result.failureMessage ?: "Failed")}' details='${escapeTc(result.failureDetails ?: "")}']\n",
+                                ProcessOutputTypes.STDOUT
+                            )
+                            Status.ERROR -> processHandler.notifyTextAvailable(
+                                "##teamcity[testFailed name='${result.name}' message='${escapeTc(result.errorMessage ?: "Error")}' details='${escapeTc(result.errorDetails ?: "")}']\n",
+                                ProcessOutputTypes.STDOUT
+                            )
+                            Status.SKIPPED -> processHandler.notifyTextAvailable(
+                                "##teamcity[testIgnored name='${result.name}' message='${escapeTc(result.skippedMessage ?: "Skipped")}']\n",
+                                ProcessOutputTypes.STDOUT
+                            )
+                            else -> {}
+                        }
+
+                        processHandler.notifyTextAvailable("##teamcity[testFinished name='${result.name}']\n", ProcessOutputTypes.STDOUT)
+                    }
+                    processHandler.notifyTextAvailable("##teamcity[testSuiteFinished name='ParsedSuite']\n", ProcessOutputTypes.STDOUT)
+                    processHandler.destroyProcess()
+                }
+            }, 500, TimeUnit.MILLISECONDS)
+        }
+    }
     private fun buildSshCommand(host: String, jmxInput: String): String = """
         ssh -o StrictHostKeyChecking=accept-new root@$host \
         "docker exec ots-17-17 mkdir -p /usr/local/workday-oms/logs/junit && \
@@ -108,11 +186,19 @@ object RemoteTestExecutor {
     }
 
     private fun notifyUser(project: Project): Notification {
-        val notification = NotificationGroupManager.getInstance()
+//        val notification = NotificationGroupManager.getInstance()
+//            .getNotificationGroup("OmsTest Notifications")
+//            .createNotification("Running remote test...", NotificationType.INFORMATION)
+//        notification.notify(project)
+//        return notification
+        return NotificationGroupManager.getInstance()
             .getNotificationGroup("OmsTest Notifications")
             .createNotification("Running remote test...", NotificationType.INFORMATION)
-        notification.notify(project)
-        return notification
+            .also { it.notify(project) }
+//        val notification = NotificationGroupManager.getInstance()
+//            .getNotificationGroup("run.notifications") // This is a known valid built-in ID
+//            .createNotification("Running remote test...", NotificationType.INFORMATION)
+//        notification.notify(project)        return notification
     }
 
     fun printTestResultLinks(project: Project, consoleView: ConsoleView) {

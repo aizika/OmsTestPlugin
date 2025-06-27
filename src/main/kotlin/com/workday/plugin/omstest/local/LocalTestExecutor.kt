@@ -52,7 +52,8 @@ object LocalTestExecutor {
             consoleView,
             processHandler,
             consoleView.component,
-            "$runTabName locally")
+            "$runTabName locally"
+        )
 
         val executor: Executor = DefaultRunExecutor.getRunExecutorInstance()
         val runContentManager = RunContentManager.getInstance(project)
