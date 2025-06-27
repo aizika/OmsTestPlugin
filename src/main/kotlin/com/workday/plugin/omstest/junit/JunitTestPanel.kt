@@ -1,6 +1,5 @@
 package com.workday.plugin.omstest.junit
 
-import com.intellij.execution.ExecutionException
 import com.intellij.execution.Executor
 import com.intellij.execution.Location
 import com.intellij.execution.configurations.ConfigurationFactory
@@ -12,7 +11,6 @@ import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.execution.runners.ProgramRunner
 import com.intellij.execution.testframework.sm.SMTestRunnerConnectionUtil
 import com.intellij.execution.testframework.sm.runner.SMTRunnerConsoleProperties
 import com.intellij.execution.testframework.sm.runner.SMTestLocator

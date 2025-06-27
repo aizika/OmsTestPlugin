@@ -27,9 +27,9 @@ private fun parseTestCase(testCaseElement: Element): JunitTestResult {
 
     val systemOut = getElementTextContent(testCaseElement, "system-out")
     val systemErr = getElementTextContent(testCaseElement, "system-err")
-    val failureMessage = getElementAttribute(testCaseElement, "failure", "message")
+    val failureMessage = getElementMessageAttribute(testCaseElement, "failure")
     val failureDetails = getElementTextContent(testCaseElement, "failure")
-    val errorMessage = getElementAttribute(testCaseElement, "error", "message")
+    val errorMessage = getElementMessageAttribute(testCaseElement, "error")
     val errorDetails = getElementTextContent(testCaseElement, "error")
     val skippedMessage = getElementTextContent(testCaseElement, "skipped")
 
@@ -64,11 +64,11 @@ private fun getElementTextContent(parent: Element, tagName: String): String? {
     return null
 }
 
-private fun getElementAttribute(parent: Element, tagName: String, attribute: String): String? {
+private fun getElementMessageAttribute(parent: Element, tagName: String): String? {
     val nodeList = parent.getElementsByTagName(tagName)
     if (nodeList.length > 0) {
         val node = nodeList.item(0) as? Element
-        return node?.getAttribute(attribute)
+        return node?.getAttribute("messsage")
     }
     return null
 }
