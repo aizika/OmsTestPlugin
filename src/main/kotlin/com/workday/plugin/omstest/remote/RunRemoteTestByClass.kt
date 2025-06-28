@@ -15,8 +15,9 @@ import com.workday.plugin.omstest.util.VisibilityManager
  * @since Jun-2025
  */
 class RunRemoteTestByClass : AnAction() {
-
     override fun actionPerformed(e: AnActionEvent) {
+        println("RunRemoteTestByClass triggered")  // or use Logger
+
         val project = e.project ?: return
         val target = TargetResolver.resolveClassTarget(e) ?: return
         RemoteTestExecutor.runRemoteTestClass(project, target.fqName, target.category, target.runTabName)

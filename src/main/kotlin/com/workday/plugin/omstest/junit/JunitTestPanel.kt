@@ -64,6 +64,10 @@ class JunitTestPanel {
             "##teamcity[testSuiteStarted name='$suiteName']\n",
             ProcessOutputTypes.STDOUT
         )
+//        processHandler.notifyTextAvailable(
+//            "${suite.name}\n",
+//            ProcessOutputTypes.STDOUT
+//        )
 
         // Display all test results
         val results = suite.results.associateBy { it.name }
@@ -97,6 +101,10 @@ class JunitTestPanel {
         for ((_, result) in results) {
             processHandler.notifyTextAvailable(
                 "##teamcity[testStarted name='${result.name}']\n",
+                ProcessOutputTypes.STDOUT
+            )
+            processHandler.notifyTextAvailable(
+                "${result.name}: ${result.timeInMillisStr}\n",
                 ProcessOutputTypes.STDOUT
             )
 

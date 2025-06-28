@@ -26,6 +26,11 @@
         <codeInsight.lineMarkerProvider
                 language="JAVA"
                 implementationClass="com.workday.plugin.omstest.gutter.RemoteTestClassGutterMarkerProvider"/>
+<!--    </extensions>-->
+<!--    <extensions defaultExtensionNs="com.intellij">-->
+<!--        <runLineMarkerContributor-->
+<!--                language="JAVA"-->
+<!--                implementationClass="com.workday.plugin.omstest.experiment.MyRunLineMarkerContributor"/>-->
     </extensions>
     <actions>
         <group id="OmsTestActionsGroup"
