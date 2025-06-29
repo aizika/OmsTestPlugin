@@ -2,7 +2,6 @@ package com.workday.plugin.omstest.remote
 
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.filters.TextConsoleBuilderFactory
-import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.execution.ui.RunContentDescriptor
@@ -15,7 +14,6 @@ import com.intellij.openapi.project.Project
 import com.workday.plugin.omstest.junit.JunitTestPanel
 import com.workday.plugin.omstest.util.LastTestStorage
 import com.workday.plugin.omstest.util.NopProcessHandler
-import java.io.OutputStream
 
 /**
  * Utility object for running remote tests on a specified host.
@@ -97,7 +95,7 @@ object RemoteTestExecutor {
 
         val notification = notifyUser(project)
         ApplicationManager.getApplication().executeOnPooledThread {
-            runCommand(sshCommand, consoleView,processHandler,  "Running test on $host")
+            runCommand(sshCommand, consoleView, processHandler, "Running test on $host")
             runCommand(scpCommand, consoleView, processHandler, "Fetching logs from $host")
             notification.expire()
             JunitTestPanel().displayParsedResults(project, processHandler)

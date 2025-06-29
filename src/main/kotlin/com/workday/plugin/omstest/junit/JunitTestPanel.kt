@@ -5,7 +5,6 @@ import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import java.io.File
-import java.io.OutputStream
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
