@@ -1,10 +1,14 @@
 package com.workday.plugin.omstest.local
 
+import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.process.OSProcessHandler
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.workday.plugin.omstest.util.LastTestStorage
 import com.workday.plugin.omstest.util.TargetResolver
 import com.workday.plugin.omstest.util.VisibilityManager
+import java.io.File
 
 /**
  * Action to run a Gradle test for the selected Java method in IntelliJ IDEA.
@@ -17,7 +21,18 @@ class RunGradleTestByMethod : AnAction() {
     override fun actionPerformed(event: AnActionEvent) {
         val target = TargetResolver.resolveMethodTarget(event) ?: return
         val targetName = "-PtestMethod=${target.fqName}"
-        LocalTestExecutor.runCommand(event.project, target.runTabName, targetName)
+        val commandParts = listOf(
+            "./gradlew",
+            targetName,
+            ":runTestJmx",
+            "-s"
+        )
+        LastTestStorage.setLocal(target.runTabName, targetName)
+
+        val cmdLine = GeneralCommandLine(commandParts)
+        cmdLine.workDirectory = File(event.project!!.basePath ?: ".")
+
+        LocalTestExecutor.runCommand(event.project, target.runTabName, targetName, OSProcessHandler(cmdLine))
     }
 
     override fun update(e: AnActionEvent) {

@@ -28,7 +28,9 @@ object LocalTestExecutor {
      * @param project The IntelliJ IDEA project context.
      * @param runTabName A label for the Run tool window tab where the test output will be displayed.
      */
-    fun runCommand(project: Project?, runTabName: String, targetName: String) {
+    fun runCommand(
+        project: Project?, runTabName: String, targetName: String, processHandler: OSProcessHandler
+    ) {
         if (project == null) return
 
         val commandParts = listOf(
@@ -42,7 +44,6 @@ object LocalTestExecutor {
         val cmdLine = GeneralCommandLine(commandParts)
         cmdLine.workDirectory = File(project.basePath ?: ".")
 
-        val processHandler = OSProcessHandler(cmdLine)
         val consoleView: ConsoleView = TextConsoleBuilderFactory.getInstance()
             .createBuilder(project)
             .console

@@ -1,10 +1,15 @@
 package com.workday.plugin.omstest.local
 
+import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.process.OSProcessHandler
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.workday.plugin.omstest.junit.JunitTestPanel
+import com.workday.plugin.omstest.util.LastTestStorage
 import com.workday.plugin.omstest.util.TargetResolver
 import com.workday.plugin.omstest.util.VisibilityManager
+import java.io.File
 
 /**
  * Action to run a Gradle test for the selected Java class in IntelliJ IDEA.
@@ -18,7 +23,21 @@ class RunGradleTestByClass : AnAction() {
         val target = TargetResolver.resolveClassTarget(event) ?: return
 
         val targetName = "-PtestClass=${target.fqName}"
-        LocalTestExecutor.runCommand(event.project, target.runTabName, targetName)
+        val commandParts = listOf(
+            "./gradlew",
+            targetName,
+            ":runTestJmx",
+            "-s"
+        )
+        LastTestStorage.setLocal(target.runTabName, targetName)
+
+        val cmdLine = GeneralCommandLine(commandParts)
+        cmdLine.workDirectory = File(event.project!!.basePath ?: ".")
+
+        val processHandler = OSProcessHandler(cmdLine)
+        LocalTestExecutor.runCommand(event.project, target.runTabName, targetName, processHandler)
+        JunitTestPanel().displayParsedResults(event.project!!, processHandler)
+
     }
 
     /**

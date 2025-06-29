@@ -14,11 +14,20 @@ intellij {
     version.set("2024.1")
     type.set("IC") // Compatible with IntelliJ Community Edition
     plugins.set(listOf("java"))
-
     sandboxDir.set("/Users/alexander.aizikivsky/code/oms/")
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
 tasks {
+    runIde {
+        systemProperty("ide.show.tips.on.startup.default.value", false)
+        systemProperty("idea.is.internal", true) // optional, disables some startup checks
+    }
     patchPluginXml {
         sinceBuild.set("240")
         untilBuild.set("999.*")
@@ -34,4 +43,5 @@ tasks {
         targetCompatibility = "17"
         sourceCompatibility = "17"
     }
+
 }

@@ -2,6 +2,7 @@ package com.workday.plugin.omstest.remote
 
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.filters.TextConsoleBuilderFactory
+import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.execution.ui.RunContentDescriptor
@@ -13,6 +14,8 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.workday.plugin.omstest.junit.JunitTestPanel
 import com.workday.plugin.omstest.util.LastTestStorage
+import com.workday.plugin.omstest.util.NopProcessHandler
+import java.io.OutputStream
 
 /**
  * Utility object for running remote tests on a specified host.
@@ -90,13 +93,14 @@ object RemoteTestExecutor {
 
         val sshCommand = buildSshCommand(host, jmxInput)
         val scpCommand = buildScpCommand(project, host)
+        val processHandler = NopProcessHandler()
 
         val notification = notifyUser(project)
         ApplicationManager.getApplication().executeOnPooledThread {
-            runCommand(sshCommand, consoleView, "Running test on $host")
-            runCommand(scpCommand, consoleView, "Fetching logs from $host")
+            runCommand(sshCommand, consoleView,processHandler,  "Running test on $host")
+            runCommand(scpCommand, consoleView, processHandler, "Fetching logs from $host")
             notification.expire()
-            JunitTestPanel().displayParsedResults(project)
+            JunitTestPanel().displayParsedResults(project, processHandler)
         }
     }
 
@@ -118,7 +122,7 @@ object RemoteTestExecutor {
             .also { it.notify(project) }
     }
 
-    private fun runCommand(command: String, console: ConsoleView, title: String) {
+    private fun runCommand(command: String, console: ConsoleView, processHandler: NopProcessHandler, title: String) {
         console.print("\n> $title\n", ConsoleViewContentType.SYSTEM_OUTPUT)
         try {
             val process = ProcessBuilder("/bin/sh", "-c", command)

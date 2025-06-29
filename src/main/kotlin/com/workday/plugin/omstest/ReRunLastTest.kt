@@ -1,5 +1,7 @@
 package com.workday.plugin.omstest
 
+import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.process.OSProcessHandler
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -8,6 +10,7 @@ import com.intellij.openapi.ui.Messages
 import com.workday.plugin.omstest.local.LocalTestExecutor
 import com.workday.plugin.omstest.remote.RemoteTestExecutor.runTestWithHost
 import com.workday.plugin.omstest.util.LastTestStorage
+import java.io.File
 
 class ReRunLastTest : AnAction() {
 
@@ -23,8 +26,18 @@ class ReRunLastTest : AnAction() {
                     showMissingDialog(project)
                     return
                 }
+                val commandParts = listOf(
+                    "./gradlew",
+                    targetName,
+                    ":runTestJmx",
+                    "-s"
+                )
+                LastTestStorage.setLocal(runTabName, targetName)
 
-                LocalTestExecutor.runCommand(project, runTabName, targetName)
+                val cmdLine = GeneralCommandLine(commandParts)
+                cmdLine.workDirectory = File(project.basePath ?: ".")
+
+                LocalTestExecutor.runCommand(project, runTabName, targetName, OSProcessHandler(cmdLine))
             }
 
             LastTestStorage.Environment.REMOTE -> {

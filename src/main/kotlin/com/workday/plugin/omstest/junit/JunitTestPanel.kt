@@ -26,17 +26,17 @@ class JunitTestPanel {
      *
      * @param project The current IntelliJ project.
      */
-    fun displayParsedResults(project: Project) {
+    fun displayParsedResults(project: Project, processHandler: ProcessHandler) {
         val logFile = File(project.basePath, TEST_JUNIT_JUPITER_XML)
         if (!logFile.exists()) return
 
         ApplicationManager.getApplication().invokeLater {
-            val processHandler = object : ProcessHandler() {
-                override fun destroyProcessImpl() = notifyProcessTerminated(0)
-                override fun detachProcessImpl() = notifyProcessDetached()
-                override fun detachIsDefault(): Boolean = false
-                override fun getProcessInput(): OutputStream? = null
-            }
+//            val processHandler = object : ProcessHandler() {
+//                override fun destroyProcessImpl() = notifyProcessTerminated(0)
+//                override fun detachProcessImpl() = notifyProcessDetached()
+//                override fun detachIsDefault(): Boolean = false
+//                override fun getProcessInput(): OutputStream? = null
+//            }
             ParsedResultConsole().initAndShow(project, processHandler)
             Executors.newSingleThreadScheduledExecutor().schedule({
                 val suite = JunitResultParser().parseTestSuite(logFile)
