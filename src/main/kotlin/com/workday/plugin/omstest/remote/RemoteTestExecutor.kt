@@ -1,7 +1,7 @@
 package com.workday.plugin.omstest.remote
 
 import com.intellij.execution.executors.DefaultRunExecutor
-import com.intellij.execution.filters.TextConsoleBuilderFactory
+import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.execution.ui.RunContentDescriptor
@@ -12,8 +12,9 @@ import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.workday.plugin.omstest.junit.JunitTestPanel
+import com.workday.plugin.omstest.junit.ParsedResultConsole
+import com.workday.plugin.omstest.util.JunitProcessHandler
 import com.workday.plugin.omstest.util.LastTestStorage
-import com.workday.plugin.omstest.util.NopProcessHandler
 
 /**
  * Utility object for running remote tests on a specified host.
@@ -68,9 +69,11 @@ object RemoteTestExecutor {
         runTabName: String
     ) {
         LastTestStorage.setRemote(host, fqTestName, jmxParams, runTabName)
-
-        val consoleView = TextConsoleBuilderFactory.getInstance()
-            .createBuilder(project).console
+        val processHandler = JunitProcessHandler()
+        val console = ParsedResultConsole()
+        console.initAndShow(project, processHandler)
+        val consoleView = console.consoleView!!
+        processHandler.start()
 
         val descriptor = RunContentDescriptor(
             consoleView,
@@ -91,15 +94,29 @@ object RemoteTestExecutor {
 
         val sshCommand = buildSshCommand(host, jmxInput)
         val scpCommand = buildScpCommand(project, host)
-        val processHandler = NopProcessHandler()
 
         val notification = notifyUser(project)
+
         ApplicationManager.getApplication().executeOnPooledThread {
-            runCommand(sshCommand, consoleView, processHandler, "Running test on $host")
-            runCommand(scpCommand, consoleView, processHandler, "Fetching logs from $host")
+            val suiteName = fqTestName.substringBefore('#').substringAfterLast('.')
+
+            val junitTestPanel = JunitTestPanel()
+            junitTestPanel.emitTestSuiteStarted(suiteName, processHandler)
+
+            runCommand(sshCommand, consoleView!!, processHandler, "Running test on $host")
+            runCommand(scpCommand, consoleView!!, processHandler, "Fetching logs from $host")
+
             notification.expire()
-            JunitTestPanel().displayParsedResults(project, processHandler)
+            processHandler.notifyTextAvailable(
+                "##teamcity[testSuiteFinished name='$suiteName']\n",
+                ProcessOutputTypes.STDOUT
+            )
+            junitTestPanel.displayParsedResults(project, processHandler) {
+//                junitTestPanel.emitTestSuiteFinished(suiteName, processHandler)
+                processHandler.finish()
+            }
         }
+        println("[TEST-PANEL] Finished displayTestSuiteResult(...)")
     }
 
     private fun buildSshCommand(host: String, jmxInput: String): String = """
@@ -120,21 +137,36 @@ object RemoteTestExecutor {
             .also { it.notify(project) }
     }
 
-    private fun runCommand(command: String, console: ConsoleView, processHandler: NopProcessHandler, title: String) {
+    private fun runCommand(command: String, console: ConsoleView, processHandler: JunitProcessHandler, title: String) {
         console.print("\n> $title\n", ConsoleViewContentType.SYSTEM_OUTPUT)
+        processHandler.pushOutput("$title\n", ProcessOutputTypes.STDOUT)
         try {
             val process = ProcessBuilder("/bin/sh", "-c", command)
                 .redirectErrorStream(true)
                 .start()
 
-//            process.inputStream.bufferedReader().lines().forEach { line ->
-//                console.print("$line\n", ConsoleViewContentType.NORMAL_OUTPUT)
-//            }
+            process.inputStream.bufferedReader().lines().forEach { line ->
+                processHandler.pushOutput(line + "\n", ProcessOutputTypes.STDOUT)
+            }
 
             val exitCode = process.waitFor()
-//            console.print("Process exited with code $exitCode\n", ConsoleViewContentType.SYSTEM_OUTPUT)
+            console.print("Process exited with code $exitCode\n", ConsoleViewContentType.SYSTEM_OUTPUT)
+            processHandler.pushOutput("Process exited with code $exitCode\n", ProcessOutputTypes.STDOUT)
         } catch (e: Exception) {
-//            console.print("Error: ${e.message}\n", ConsoleViewContentType.ERROR_OUTPUT)
+            console.print("Error: ${e.message}\n", ConsoleViewContentType.ERROR_OUTPUT)
+            processHandler.pushOutput("Error: ${e.message}\n", ProcessOutputTypes.STDERR)
         }
     }
+
+    fun runDummy(project: Project) {
+        val processHandler = JunitProcessHandler()
+        val console = ParsedResultConsole()
+        console.initAndShow(project, processHandler)
+        processHandler.start()
+
+        val junitTestPanel = JunitTestPanel()
+        junitTestPanel.displayDummy(project, processHandler)
+        processHandler.finish()
+    }
+
 }

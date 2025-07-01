@@ -12,22 +12,6 @@ import javax.xml.parsers.DocumentBuilderFactory
  */
 class JunitResultParser {
 
-//    fun parseResultFile(file: File): Map<String, JunitTestResult> {
-//        val docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-//        val doc = docBuilder.parse(file)
-//        val root = doc.documentElement
-//        val testCases = root.getElementsByTagName("testcase")
-//
-//        val results = mutableMapOf<String, JunitTestResult>()
-//        for (i in 0 until testCases.length) {
-//            val testCaseElement = testCases.item(i) as Element
-//            val result = parseTestCase(testCaseElement)
-//            val key = "${result.className}#${result.name}"
-//            results[key] = result
-//        }
-//        return results
-//    }
-
     fun parseTestSuite(file: File): TestSuite? {
         val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
         val suiteElement = document.getElementsByTagName("testsuite").item(0) as? Element ?: return null

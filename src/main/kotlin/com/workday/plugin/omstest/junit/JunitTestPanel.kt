@@ -4,6 +4,7 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.util.concurrency.AppExecutorUtil
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -25,70 +26,87 @@ class JunitTestPanel {
      *
      * @param project The current IntelliJ project.
      */
-    fun displayParsedResults(project: Project, processHandler: ProcessHandler) {
+    fun displayParsedResults(project: Project, processHandler: ProcessHandler, onDone: () -> Unit = {}) {
         val logFile = File(project.basePath, TEST_JUNIT_JUPITER_XML)
-        if (!logFile.exists()) return
-
-        ApplicationManager.getApplication().invokeLater {
-//            val processHandler = object : ProcessHandler() {
-//                override fun destroyProcessImpl() = notifyProcessTerminated(0)
-//                override fun detachProcessImpl() = notifyProcessDetached()
-//                override fun detachIsDefault(): Boolean = false
-//                override fun getProcessInput(): OutputStream? = null
-//            }
-            ParsedResultConsole().initAndShow(project, processHandler)
-            Executors.newSingleThreadScheduledExecutor().schedule({
-                val suite = JunitResultParser().parseTestSuite(logFile)
-                ApplicationManager.getApplication().invokeLater {
-                    suite?.let { displayTestSuiteResult(it, processHandler) }
-                }
-            }, 500, TimeUnit.MILLISECONDS)
+        if (!logFile.exists()) {
+            onDone()
+            return
         }
 
+        AppExecutorUtil.getAppScheduledExecutorService().schedule({
+            val suite = JunitResultParser().parseTestSuite(logFile)
+            ApplicationManager.getApplication().invokeLater {
+                suite?.let { displayTestSuiteResult(it, processHandler) }
+                onDone() // ✅ Finish only after display
+            }
+        }, 500, TimeUnit.MILLISECONDS)
     }
+//    fun displayParsedResults(project: Project, processHandler: ProcessHandler) {
+//        val logFile = File(project.basePath, TEST_JUNIT_JUPITER_XML)
+//        if (!logFile.exists()) return
+//
+//        AppExecutorUtil.getAppScheduledExecutorService().schedule({
+//            val suite = JunitResultParser().parseTestSuite(logFile)
+//            ApplicationManager.getApplication().invokeLater {
+//                suite?.let { displayTestSuiteResult(it, processHandler) }
+//            }
+//        }, 500, TimeUnit.MILLISECONDS)
+//    }
 
-    private fun displayTestSuiteResult(suite: TestSuite, processHandler: ProcessHandler) {
-        fun escapeTc(s: String): String =
-            s.replace("|", "||")
-                .replace("'", "|'")
-                .replace("\n", "|n")
-                .replace("\r", "|r")
-                .replace("[", "|[")
-                .replace("]", "|]")
-
-        val suiteName = escapeTc(suite.name)
-
-        // Start the test suite
+    fun emitTestSuiteStarted(suiteName: String, processHandler: ProcessHandler) {
         processHandler.notifyTextAvailable(
             "##teamcity[testSuiteStarted name='$suiteName']\n",
             ProcessOutputTypes.STDOUT
         )
-//        processHandler.notifyTextAvailable(
-//            "${suite.name}\n",
-//            ProcessOutputTypes.STDOUT
-//        )
+    }
+    fun emitTestSuiteFinished(suiteName: String, processHandler: ProcessHandler) {
+        processHandler.notifyTextAvailable(
+            "##teamcity[testSuiteFinished name='$suiteName']\n",
+            ProcessOutputTypes.STDOUT
+        )
+    }
 
-        // Display all test results
+    private fun displayTestSuiteResult(suite: TestSuite, processHandler: ProcessHandler) {
+        val suiteName = "AA"
+
+//        emitTestSuiteStarted(suiteName, processHandler)
+
+        processHandler.notifyTextAvailable(
+            "After suite started\n",
+            ProcessOutputTypes.STDOUT
+        )
+
         val results = suite.results.associateBy { it.name }
-        displayResults(results, processHandler)
+        displayResults(results, processHandler, {
+            extracted(processHandler, suite, suiteName)
+            processHandler.destroyProcess()
+        })
 
-        // Optionally, you could log summary metadata if desired:
-        // (not standard TeamCity format, just informative text)
+    }
+
+    private fun extracted(
+        processHandler: ProcessHandler,
+        suite: TestSuite,
+        suiteName: String
+    ) {
+        processHandler.notifyTextAvailable(
+            "Before suite finished\n",
+            ProcessOutputTypes.STDOUT
+        )
+
         processHandler.notifyTextAvailable(
             "##teamcity[message text='Suite Summary: tests=${suite.tests}, failures=${suite.failures}, errors=${suite.errors}, skipped=${suite.skipped}, time=${suite.timeMillisStr}, status=${suite.status}, duration=123 ']\n",
             ProcessOutputTypes.STDOUT
         )
 
-        // End the test suite
+        //        emitTestSuiteFinished(suiteName, processHandler)
         processHandler.notifyTextAvailable(
-            "##teamcity[testSuiteFinished name='${suite.name}' duration='${suite.timeMillisStr}' ]\n",
+            "##teamcity[testSuiteFinished name='$suiteName']\n",
             ProcessOutputTypes.STDOUT
         )
-
-        processHandler.destroyProcess()
     }
 
-    private fun displayResults(results: Map<String, JunitTestResult>, processHandler: ProcessHandler) {
+    private fun displayResults(results: Map<String, JunitTestResult>, processHandler: ProcessHandler, onDone: () -> Unit= {}) {
         fun escapeTc(s: String): String =
             s.replace("|", "||")
                 .replace("'", "|'")
@@ -103,7 +121,7 @@ class JunitTestPanel {
                 ProcessOutputTypes.STDOUT
             )
             processHandler.notifyTextAvailable(
-                "${result.name}: ${result.timeInMillisStr}\n",
+                "After test started\n",
                 ProcessOutputTypes.STDOUT
             )
 
@@ -133,13 +151,57 @@ class JunitTestPanel {
 
                 else -> {}
             }
+            processHandler.notifyTextAvailable(
+                "Before test finished\n",
+                ProcessOutputTypes.STDOUT
+            )
 
             processHandler.notifyTextAvailable(
                 "##teamcity[testFinished name='${result.name}' duration='${result.timeInMillisStr}']\n",
                 ProcessOutputTypes.STDOUT
             )
+            onDone()
         }
 
-        processHandler.destroyProcess()
+//        processHandler.destroyProcess()
+    }
+    val teamCityMessages = listOf(
+        // Suite start
+        "##teamcity[testSuiteStarted name='Test Suite zero']",
+        "##teamcity[testSuiteStarted name='Test Suite 1']",
+        "##teamcity[testSuiteStarted name='Test Suite A']",
+
+        // TEST_1_A start
+        "##teamcity[testStarted name='Test 1.A' captureStandardOutput='false']",
+//        "##teamcity[flowStarted flowId='mainFlow-1a']",
+
+        // Subtest 1
+        "##teamcity[testStarted name='Test 1.A, Subtest 1' captureStandardOutput='false']",
+//        "##teamcity[flowStarted flowId='subFlow1-1a' parent='mainFlow-1a']",
+//        "##teamcity[flowFinished flowId='subFlow1-1a']",
+        "##teamcity[testFinished name='Test 1.A, Subtest 1' duration='1000']",
+
+        // Subtest 2
+        "##teamcity[testStarted name='Test 1.A, Subtest 2' captureStandardOutput='false']",
+//        "##teamcity[flowStarted flowId='subFlow2-1a' parent='mainFlow-1a']",
+//        "##teamcity[flowFinished flowId='subFlow2-1a']",
+        "##teamcity[testFinished name='Test 1.A, Subtest 2' duration='1000']",
+
+        // End TEST_1_A
+//        "##teamcity[flowFinished flowId='mainFlow-1a']",
+        "##teamcity[testFinished name='Test 1.A' duration='3000']",
+
+        // Suite end
+        "##teamcity[testSuiteFinished name='Test Suite A']",
+        "##teamcity[testSuiteFinished name='Test Suite 1']",
+        "##teamcity[testSuiteFinished name='Test Suite zero']"
+    )
+    fun displayDummy(project: Project, processHandler: ProcessHandler) {
+        emitTeamCityMessages(processHandler, teamCityMessages)
+    }
+    fun emitTeamCityMessages(processHandler: ProcessHandler, messages: List<String>) {
+        for (line in messages) {
+            processHandler.notifyTextAvailable(line + "\n", ProcessOutputTypes.STDOUT)
+        }
     }
 }
