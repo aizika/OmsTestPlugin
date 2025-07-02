@@ -99,35 +99,18 @@ object RemoteTestExecutor {
         val notification = notifyUser(project)
 
         ApplicationManager.getApplication().executeOnPooledThread {
-            val rootSuiteName = "OmsTestSuite"
-//            val classSuiteName = fqTestName.substringBefore('#').substringAfterLast('.')
-
             val junitTestPanel = JunitTestPanel()
-//            junitTestPanel.emitTestSuiteStarted(rootSuiteName, processHandler)
-
             runCommand(sshCommand, consoleView!!, processHandler, "Running test on $host")
             runCommand(scpCommand, consoleView!!, processHandler, "Fetching logs from $host")
 
             notification.expire()
             junitTestPanel.displayParsedResults(project, processHandler,
                 {
-//                    junitTestPanel.emitTestSuiteFinished(rootSuiteName, processHandler)
                     processHandler.finish()
                 })
-//            processHandler.notifyTextAvailable(
-//                "##teamcity[testSuiteFinished name='$rootSuiteName']\n",
-//                ProcessOutputTypes.STDOUT
-//            )
-
 
         }
-//        waitForProcessToFinish(processHandler)
         println("[TEST-PANEL] Finished displayTestSuiteResult(...)")
-    }
-
-    fun waitForProcessToFinish(processHandler: ProcessHandler): Int {
-        processHandler.waitFor()
-        return processHandler.exitCode ?: -1
     }
 
     private fun buildSshCommand(host: String, jmxInput: String): String = """
