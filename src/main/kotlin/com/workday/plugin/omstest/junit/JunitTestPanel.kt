@@ -4,10 +4,7 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.intellij.util.concurrency.AppExecutorUtil
 import java.io.File
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 private const val TEST_JUNIT_JUPITER_XML = "TEST-junit-jupiter.xml"
 
@@ -41,38 +38,6 @@ class JunitTestPanel {
                 onDone()
             }
         }
-
-//        AppExecutorUtil.getAppScheduledExecutorService().schedule({
-//            val suite = JunitResultParser().parseTestSuite(logFile)
-//            ApplicationManager.getApplication().invokeLater {
-//                suite?.let { displayTestSuiteResult(it, processHandler) }
-//                onDone() // ✅ Finish only after display
-//            }
-//        }, 500, TimeUnit.MILLISECONDS)
-    }
-//    fun displayParsedResults(project: Project, processHandler: ProcessHandler) {
-//        val logFile = File(project.basePath, TEST_JUNIT_JUPITER_XML)
-//        if (!logFile.exists()) return
-//
-//        AppExecutorUtil.getAppScheduledExecutorService().schedule({
-//            val suite = JunitResultParser().parseTestSuite(logFile)
-//            ApplicationManager.getApplication().invokeLater {
-//                suite?.let { displayTestSuiteResult(it, processHandler) }
-//            }
-//        }, 500, TimeUnit.MILLISECONDS)
-//    }
-
-    fun emitTestSuiteStarted(suiteName: String, processHandler: ProcessHandler) {
-        processHandler.notifyTextAvailable(
-            "##teamcity[testSuiteStarted name='$suiteName']\n",
-            ProcessOutputTypes.STDOUT
-        )
-    }
-    fun emitTestSuiteFinished(suiteName: String, processHandler: ProcessHandler) {
-        processHandler.notifyTextAvailable(
-            "##teamcity[testSuiteFinished name='$suiteName']\n",
-            ProcessOutputTypes.STDOUT
-        )
     }
 
     private fun displayTestSuiteResult(suite: TestSuite, processHandler: ProcessHandler) {
@@ -94,38 +59,9 @@ class JunitTestPanel {
                     ProcessOutputTypes.STDOUT
                 )
             }
-
-
     }
 
-
-    fun groupTestsByClass(results: List<JunitTestResult>): Map<String, List<JunitTestResult>> {
-        return results.groupBy { it.className }
-    }
-
-    private fun extracted(
-        processHandler: ProcessHandler,
-        suite: TestSuite,
-        suiteName: String
-    ) {
-        processHandler.notifyTextAvailable(
-            "Before suite finished\n",
-            ProcessOutputTypes.STDOUT
-        )
-
-//        processHandler.notifyTextAvailable(
-//            "##teamcity[message text='Suite Summary: tests=${suite.tests}, failures=${suite.failures}, errors=${suite.errors}, skipped=${suite.skipped}, time=${suite.timeMillisStr}, status=${suite.status}, duration=123 ']\n",
-//            ProcessOutputTypes.STDOUT
-//        )
-
-        //        emitTestSuiteFinished(suiteName, processHandler)
-        processHandler.notifyTextAvailable(
-            "##teamcity[testSuiteFinished name='$suiteName']\n",
-            ProcessOutputTypes.STDOUT
-        )
-    }
-
-    private fun displayResults(results: Map<String, JunitTestResult>, processHandler: ProcessHandler, onDone: () -> Unit= {}) {
+    private fun displayResults(results: Map<String, JunitTestResult>, processHandler: ProcessHandler) {
         fun escapeTc(s: String): String =
             s.replace("|", "||")
                 .replace("'", "|'")
@@ -137,10 +73,6 @@ class JunitTestPanel {
         for ((_, result) in results) {
             processHandler.notifyTextAvailable(
                 "##teamcity[testStarted name='${result.name}']\n",
-                ProcessOutputTypes.STDOUT
-            )
-            processHandler.notifyTextAvailable(
-                "After test started\n",
                 ProcessOutputTypes.STDOUT
             )
 
@@ -171,17 +103,9 @@ class JunitTestPanel {
                 else -> {}
             }
             processHandler.notifyTextAvailable(
-                "Before test finished\n",
-                ProcessOutputTypes.STDOUT
-            )
-
-            processHandler.notifyTextAvailable(
                 "##teamcity[testFinished name='${result.name}' duration='${result.timeInMillisStr}']\n",
                 ProcessOutputTypes.STDOUT
             )
         }
-        onDone()
-
-//        processHandler.destroyProcess()
     }
 }
