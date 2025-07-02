@@ -31,7 +31,7 @@ class HostPromptDialog : DialogWrapper(true) {
         // Set initial host from LastTestStorage
         hostTextField.text = LastTestStorage.host ?: ""
 
-        // Enable OK only if host is non-empty
+        // Enable OK only if the host is non-empty
         validateInput()
         hostTextField.document.addDocumentListener(object : DocumentListener {
             override fun insertUpdate(e: DocumentEvent) = validateInput()

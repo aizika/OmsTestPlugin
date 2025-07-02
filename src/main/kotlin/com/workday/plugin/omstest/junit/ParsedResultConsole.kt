@@ -24,17 +24,9 @@ import com.intellij.psi.search.GlobalSearchScope
 import javax.swing.JPanel
 
 /**
- * Creates and displays a test console UI backed by a dummy run configuration for parsed test results.
+ * Creates and displays a test console UI backed by a run configuration for parsed test results.
  */
 class ParsedResultConsole {
-
-//    companion object {
-//        fun create(project: Project, handler: ProcessHandler): ParsedResultConsole {
-//            val console = ParsedResultConsole()
-//            console.initAndShow(project, handler)
-//            return console
-//        }
-//    }
 
     var consoleView: ConsoleView? = null
         private set

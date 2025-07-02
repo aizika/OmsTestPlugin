@@ -31,7 +31,6 @@ object LastTestStorage {
         this.environment = Environment.LOCAL
 
         // Clear remote-related fields
-//        this.host = null // Do not clear host, it might be used later
         this.fqTestName = null
         this.jmxParams = null
     }

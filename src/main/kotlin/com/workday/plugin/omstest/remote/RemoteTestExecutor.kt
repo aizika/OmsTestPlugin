@@ -1,7 +1,6 @@
 package com.workday.plugin.omstest.remote
 
 import com.intellij.execution.executors.DefaultRunExecutor
-import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
@@ -100,14 +99,13 @@ object RemoteTestExecutor {
 
         ApplicationManager.getApplication().executeOnPooledThread {
             val junitTestPanel = JunitTestPanel()
-            runCommand(sshCommand, consoleView!!, processHandler, "Running test on $host")
-            runCommand(scpCommand, consoleView!!, processHandler, "Fetching logs from $host")
+            runCommand(sshCommand, consoleView, processHandler, "Running test on $host")
+            runCommand(scpCommand, consoleView, processHandler, "Fetching logs from $host")
 
             notification.expire()
-            junitTestPanel.displayParsedResults(project, processHandler,
-                {
-                    processHandler.finish()
-                })
+            junitTestPanel.displayParsedResults(project, processHandler) {
+                processHandler.finish()
+            }
 
         }
         println("[TEST-PANEL] Finished displayTestSuiteResult(...)")

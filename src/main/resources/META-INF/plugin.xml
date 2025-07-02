@@ -26,11 +26,6 @@
         <codeInsight.lineMarkerProvider
                 language="JAVA"
                 implementationClass="com.workday.plugin.omstest.gutter.RemoteTestClassGutterMarkerProvider"/>
-<!--    </extensions>-->
-<!--    <extensions defaultExtensionNs="com.intellij">-->
-<!--        <runLineMarkerContributor-->
-<!--                language="JAVA"-->
-<!--                implementationClass="com.workday.plugin.omstest.experiment.MyRunLineMarkerContributor"/>-->
     </extensions>
     <actions>
         <group id="OmsTestActionsGroup"
@@ -49,7 +44,7 @@
                     description="Run a test method on remote OMS via JMX"
                     icon="/icons/omsTestMethodIcon.svg"/>
             <action id="RunRemoteTestByClass"
-                    class="com.workday.plugin.omstest.actions.RunRemoteTestByClass"
+                    class="com.workday.plugin.omstest.remote.RunRemoteTestByClass"
                     text="Run Remote Test (Class)"
                     description="Runs the test class remotely via OMS plugin"
                     icon="/icons/omsTestClassIcon.svg"/>
