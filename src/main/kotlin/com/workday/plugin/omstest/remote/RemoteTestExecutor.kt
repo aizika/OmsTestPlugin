@@ -1,6 +1,7 @@
 package com.workday.plugin.omstest.remote
 
 import com.intellij.execution.executors.DefaultRunExecutor
+import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
@@ -98,25 +99,35 @@ object RemoteTestExecutor {
         val notification = notifyUser(project)
 
         ApplicationManager.getApplication().executeOnPooledThread {
-            val suiteName = fqTestName.substringBefore('#').substringAfterLast('.')
+            val rootSuiteName = "OmsTestSuite"
+//            val classSuiteName = fqTestName.substringBefore('#').substringAfterLast('.')
 
             val junitTestPanel = JunitTestPanel()
-            junitTestPanel.emitTestSuiteStarted(suiteName, processHandler)
+//            junitTestPanel.emitTestSuiteStarted(rootSuiteName, processHandler)
 
             runCommand(sshCommand, consoleView!!, processHandler, "Running test on $host")
             runCommand(scpCommand, consoleView!!, processHandler, "Fetching logs from $host")
 
             notification.expire()
-            processHandler.notifyTextAvailable(
-                "##teamcity[testSuiteFinished name='$suiteName']\n",
-                ProcessOutputTypes.STDOUT
-            )
-            junitTestPanel.displayParsedResults(project, processHandler) {
-//                junitTestPanel.emitTestSuiteFinished(suiteName, processHandler)
-                processHandler.finish()
-            }
+            junitTestPanel.displayParsedResults(project, processHandler,
+                {
+//                    junitTestPanel.emitTestSuiteFinished(rootSuiteName, processHandler)
+                    processHandler.finish()
+                })
+//            processHandler.notifyTextAvailable(
+//                "##teamcity[testSuiteFinished name='$rootSuiteName']\n",
+//                ProcessOutputTypes.STDOUT
+//            )
+
+
         }
+//        waitForProcessToFinish(processHandler)
         println("[TEST-PANEL] Finished displayTestSuiteResult(...)")
+    }
+
+    fun waitForProcessToFinish(processHandler: ProcessHandler): Int {
+        processHandler.waitFor()
+        return processHandler.exitCode ?: -1
     }
 
     private fun buildSshCommand(host: String, jmxInput: String): String = """
@@ -157,16 +168,4 @@ object RemoteTestExecutor {
             processHandler.pushOutput("Error: ${e.message}\n", ProcessOutputTypes.STDERR)
         }
     }
-
-    fun runDummy(project: Project) {
-        val processHandler = JunitProcessHandler()
-        val console = ParsedResultConsole()
-        console.initAndShow(project, processHandler)
-        processHandler.start()
-
-        val junitTestPanel = JunitTestPanel()
-        junitTestPanel.displayDummy(project, processHandler)
-        processHandler.finish()
-    }
-
 }
