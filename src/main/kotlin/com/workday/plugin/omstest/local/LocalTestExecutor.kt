@@ -10,6 +10,8 @@ import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.execution.ui.RunContentManager
 import com.intellij.openapi.project.Project
+import com.workday.plugin.omstest.junit.JunitTestPanel
+import com.workday.plugin.omstest.remote.RemoteTestExecutor.getConsoleViewAA
 import com.workday.plugin.omstest.util.LastTestStorage
 import java.io.File
 
@@ -32,35 +34,41 @@ object LocalTestExecutor {
         project: Project?, runTabName: String, targetName: String, processHandler: OSProcessHandler
     ) {
         if (project == null) return
+//        val commandParts = listOf(
+//            "./gradlew",
+//            targetName,
+//            ":runTestJmx",
+//            "-s"
+//        )
+//        LastTestStorage.setLocal(runTabName, targetName)
 
-        val commandParts = listOf(
-            "./gradlew",
-            targetName,
-            ":runTestJmx",
-            "-s"
-        )
-        LastTestStorage.setLocal(runTabName, targetName)
+//        val cmdLine = GeneralCommandLine(commandParts)
+//        cmdLine.workDirectory = File(project.basePath ?: ".")
 
-        val cmdLine = GeneralCommandLine(commandParts)
-        cmdLine.workDirectory = File(project.basePath ?: ".")
+//        val consoleView: ConsoleView = TextConsoleBuilderFactory.getInstance()
+//            .createBuilder(project)
+//            .console
 
-        val consoleView: ConsoleView = TextConsoleBuilderFactory.getInstance()
-            .createBuilder(project)
-            .console
+        // HERE!!!!!!!!!!
+        val consoleView = getConsoleViewAA(project, processHandler)
         consoleView.attachToProcess(processHandler)
 
-        val descriptor = RunContentDescriptor(
-            consoleView,
-            processHandler,
-            consoleView.component,
-            "$runTabName locally"
-        )
-
-        val executor: Executor = DefaultRunExecutor.getRunExecutorInstance()
-        val runContentManager = RunContentManager.getInstance(project)
-
-        runContentManager.showRunContent(executor, descriptor)
+//        val descriptor = RunContentDescriptor(
+//            consoleView,
+//            processHandler,
+//            consoleView.component,
+//            "$runTabName locally"
+//        )
+//
+//        val executor: Executor = DefaultRunExecutor.getRunExecutorInstance()
+//        val runContentManager = RunContentManager.getInstance(project)
+//
+//        runContentManager.showRunContent(executor, descriptor)
 
         processHandler.startNotify()
+        val junitTestPanel = JunitTestPanel()
+        junitTestPanel.displayParsedResults(project, processHandler) {
+//            processHandler.finish()
+        }
     }
 }

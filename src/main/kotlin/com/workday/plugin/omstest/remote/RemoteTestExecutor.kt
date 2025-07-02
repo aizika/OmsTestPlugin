@@ -1,6 +1,7 @@
 package com.workday.plugin.omstest.remote
 
 import com.intellij.execution.executors.DefaultRunExecutor
+import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
@@ -61,6 +62,25 @@ object RemoteTestExecutor {
         runTestWithHost(project, fqTestName, jmxParams, host, label)
     }
 
+    fun getConsoleViewAA(project: Project, processHandler: ProcessHandler): ConsoleView {
+        val console = ParsedResultConsole()
+        console.initAndShow(project, processHandler)
+        val consoleView = console.consoleView!!
+        processHandler.startNotify()
+
+        val descriptor = RunContentDescriptor(
+            consoleView,
+            null,
+            consoleView.component,
+            "Display Name"
+        )
+
+        RunContentManager.getInstance(project)
+            .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
+        return consoleView;
+
+    }
+
     fun runTestWithHost(
         project: Project,
         fqTestName: String,
@@ -70,20 +90,21 @@ object RemoteTestExecutor {
     ) {
         LastTestStorage.setRemote(host, fqTestName, jmxParams, runTabName)
         val processHandler = JunitProcessHandler()
-        val console = ParsedResultConsole()
-        console.initAndShow(project, processHandler)
-        val consoleView = console.consoleView!!
-        processHandler.start()
-
-        val descriptor = RunContentDescriptor(
-            consoleView,
-            null,
-            consoleView.component,
-            "$runTabName on $host"
-        )
-
-        RunContentManager.getInstance(project)
-            .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
+//        val console = ParsedResultConsole()
+//        console.initAndShow(project, processHandler)
+//        val consoleView = console.consoleView!!
+//        processHandler.start()
+//
+//        val descriptor = RunContentDescriptor(
+//            consoleView,
+//            null,
+//            consoleView.component,
+//            "$runTabName on $host"
+//        )
+//
+//        RunContentManager.getInstance(project)
+//            .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)'
+        val consoleView = getConsoleViewAA(project, processHandler)
 
         val jmxInput = """
             open localhost:12016
