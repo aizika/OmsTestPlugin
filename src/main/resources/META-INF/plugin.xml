@@ -91,5 +91,9 @@
             <reference ref="RunRemoteTestByClass"/>
             <reference ref="RunGradleTestByClass"/>
         </group>
+        <action id="ReRunOmsTestAction"
+                class="com.workday.plugin.omstest.ReRunLastTest"
+                text="Re-Run OMS Test"
+                icon="AllIcons.Actions.Rerun"/>
     </actions>
 </idea-plugin>

@@ -17,10 +17,15 @@ import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.execution.ui.RunContentManager
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
+import java.awt.BorderLayout
 import javax.swing.JPanel
 
 /**
@@ -38,14 +43,32 @@ class ParsedResultConsole {
         processHandler = handler
         consoleView = createConsoleView(project, processHandler!!)
 
+        // Optional: Add a toolbar with a "Re-run Test" button
+        val actionGroup = DefaultActionGroup().apply {
+            add(object : AnAction("Re-run Test") {
+                override fun actionPerformed(e: AnActionEvent) {
+                    // You can adjust this behavior as needed
+                    ParsedResultConsole().initAndShow(project, handler)
+                }
+            })
+        }
+        val toolbar = ActionManager.getInstance().createActionToolbar("ParsedTestToolbar", actionGroup, false)
+
+        // Wrap the console and toolbar into a panel
+        val panel = JPanel(BorderLayout())
+        panel.add(toolbar.component, BorderLayout.WEST)
+        panel.add(consoleView!!.component, BorderLayout.CENTER)
+
         val descriptor = RunContentDescriptor(
-            consoleView, processHandler,
-            consoleView!!.component, "Parsed Test Results"
+            consoleView,
+            processHandler,
+            panel,
+            "Parsed Test Results"
         )
+
         RunContentManager.getInstance(project)
             .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
     }
-
     fun createConsoleView(project: Project, handler: ProcessHandler): ConsoleView {
         val config = ParsedResultRunConfiguration(project)
         val consoleProperties = object : SMTRunnerConsoleProperties(

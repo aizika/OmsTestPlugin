@@ -12,13 +12,17 @@ import com.intellij.execution.ui.RunContentManager
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.workday.plugin.omstest.ReRunLastTest
 import com.workday.plugin.omstest.junit.JunitTestPanel
 import com.workday.plugin.omstest.junit.ParsedResultConsole
 import com.workday.plugin.omstest.util.JunitProcessHandler
 import com.workday.plugin.omstest.util.LastTestStorage
-
+import javax.swing.JPanel
+import java.awt.BorderLayout
 /**
  * Utility object for running remote tests on a specified host.
  * Provides methods to run test classes and methods with JMX parameters.
@@ -69,37 +73,43 @@ object RemoteTestExecutor {
         val console = ParsedResultConsole()
         console.initAndShow(project, processHandler)
         val consoleView = console.consoleView!!
+
+        // Attach process listeners
+        val resultPath = project.basePath + "/build/test-results/legacy-xml"
         processHandler.addProcessListener(object : ProcessAdapter() {
             override fun processTerminated(event: ProcessEvent) {
                 val junitTestPanel = JunitTestPanel()
-                val path = project.basePath + "/build/test-results/legacy-xml"
-                junitTestPanel.displayParsedResults(processHandler, path) {
-                    // Optional cleanup
-                }
-            }
-        })
-        processHandler.addProcessListener(object : ProcessAdapter() {
-            override fun processTerminated(event: ProcessEvent) {
-                val junitTestPanel = JunitTestPanel()
-                val path = project.basePath
-                junitTestPanel.displayParsedResults(processHandler, path) {
+                junitTestPanel.displayParsedResults(processHandler, resultPath) {
                     // Optional cleanup
                 }
             }
         })
         processHandler.startNotify()
 
+        // 🔧 Create custom toolbar with a Re-run button
+        val toolbarGroup = DefaultActionGroup().apply {
+            add(ReRunLastTest())  // Make sure this action is defined and registered in plugin.xml
+        }
+
+        val toolbar = ActionManager.getInstance().createActionToolbar("OmsToolbar", toolbarGroup, false)
+        toolbar.setTargetComponent(consoleView.component)
+
+        // Wrap the console and toolbar into a JPanel
+        val consolePanel = JPanel(BorderLayout())
+        consolePanel.add(toolbar.component, BorderLayout.WEST)
+        consolePanel.add(consoleView.component, BorderLayout.CENTER)
+
         val descriptor = RunContentDescriptor(
             consoleView,
-            null,
-            consoleView.component,
-            "Display Name"
+            processHandler,
+            consolePanel,  // Use the panel with toolbar
+            "OMS Test Results"
         )
 
         RunContentManager.getInstance(project)
             .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
-        return consoleView
 
+        return consoleView
     }
 
     fun runTestWithHost(
