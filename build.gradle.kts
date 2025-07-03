@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.workday.plugin"
-version = "1.0-BETA"
+version = "1.001-BETA"
 
 repositories {
     mavenCentral()

@@ -20,12 +20,17 @@
                            displayType="BALLOON"
                            isLogByDefault="true"
                            toolWindowId="Run"/>
-        <codeInsight.lineMarkerProvider
+<!--        <codeInsight.lineMarkerProvider-->
+<!--                language="JAVA"-->
+<!--                implementationClass="com.workday.plugin.omstest.gutter.RemoteTestMethodGutterMarkerProvider"/>-->
+<!--        <codeInsight.lineMarkerProvider-->
+<!--                language="JAVA"-->
+<!--                implementationClass="com.workday.plugin.omstest.gutter.RemoteTestClassGutterMarkerProvider"/>-->
+<!--    </extensions>-->
+<!--    <extensions defaultExtensionNs="com.intellij">-->
+        <runLineMarkerContributor
                 language="JAVA"
-                implementationClass="com.workday.plugin.omstest.gutter.RemoteTestMethodGutterMarkerProvider"/>
-        <codeInsight.lineMarkerProvider
-                language="JAVA"
-                implementationClass="com.workday.plugin.omstest.gutter.RemoteTestClassGutterMarkerProvider"/>
+                implementationClass="com.workday.plugin.omstest.junit.MyRunLineMarkerContributor"/>
     </extensions>
     <actions>
         <group id="OmsTestActionsGroup"
@@ -67,6 +72,24 @@
                     text="Re-Run Last Test"
                     description="Re-run the last executed test command"
                     icon="AllIcons.Actions.Rerun"/>
+        </group>
+        <!-- Method-level group -->
+        <group id="OmsTestMethodGroup"
+               text="OMS Method Tests"
+               description="Run OMS test method"
+               popup="true">
+            <separator text="OMS"/>
+            <reference ref="RunRemoteTestByMethod"/>
+            <reference ref="RunGradleTestByMethod"/>
+        </group>
+        <!-- Class-level group -->
+        <group id="OmsTestClassGroup"
+               text="OMS Class Tests"
+               description="Run OMS test class"
+               popup="true">
+            <separator text="OMS"/>
+            <reference ref="RunRemoteTestByClass"/>
+            <reference ref="RunGradleTestByClass"/>
         </group>
     </actions>
 </idea-plugin>
