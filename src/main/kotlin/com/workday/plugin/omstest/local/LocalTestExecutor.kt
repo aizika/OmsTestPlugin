@@ -58,7 +58,7 @@ object LocalTestExecutor {
                     .redirectErrorStream(true)
                     .start()
 
-                log("🔄 Gradle process started")
+                log("Gradle process started")
 
                 process.inputStream.bufferedReader().useLines { lines ->
                     lines.forEach { line ->
@@ -67,7 +67,7 @@ object LocalTestExecutor {
                 }
 
                 val exitCode = process.waitFor()
-                log("✅ Gradle process exited with code $exitCode")
+                log("Gradle process exited with code $exitCode")
 
                 // Wait for XML file to appear
                 var attempts = 20
@@ -80,17 +80,17 @@ object LocalTestExecutor {
                     ApplicationManager.getApplication().invokeLater {
                         val junitTestPanel = JunitTestPanel()
                         junitTestPanel.displayParsedResults(processHandler, path) {
-                            log("✅ Test results displayed")
+                            log("Test results displayed")
                             processHandler.finish()
                         }
                     }
                 } else {
-                    log("❌ XML file not found after timeout")
+                    log("XML resul file $path not found after timeout")
                     processHandler.finish()
                 }
 
             } catch (e: Exception) {
-                log("💥 Exception: ${e.message}")
+                log("Exception: ${e.message}")
                 processHandler.finish()
             }
         }
@@ -99,7 +99,7 @@ object LocalTestExecutor {
             consoleView,
             processHandler,
             consoleView.component,
-            "Local Test Results"
+            runTabName
         )
         RunContentManager.getInstance(project)
             .showRunContent(getRunExecutorInstance(), descriptor)
