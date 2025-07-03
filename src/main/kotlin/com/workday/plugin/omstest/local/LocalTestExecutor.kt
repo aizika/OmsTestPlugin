@@ -1,17 +1,12 @@
 package com.workday.plugin.omstest.local
 
 
-import LocalProcessHandler
 import com.intellij.execution.executors.DefaultRunExecutor.getRunExecutorInstance
-import com.intellij.execution.process.KillableProcessHandler
-import com.intellij.execution.process.ProcessEvent
-import com.intellij.execution.process.ProcessListener
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.execution.ui.RunContentManager
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Key
 import com.workday.plugin.omstest.junit.JunitTestPanel
 import com.workday.plugin.omstest.junit.ParsedResultConsole
 import com.workday.plugin.omstest.util.JunitProcessHandler
@@ -109,4 +104,4 @@ object LocalTestExecutor {
         RunContentManager.getInstance(project)
             .showRunContent(getRunExecutorInstance(), descriptor)
     }
-    }
+}

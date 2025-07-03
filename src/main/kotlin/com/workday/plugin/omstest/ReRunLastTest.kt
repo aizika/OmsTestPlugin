@@ -3,13 +3,11 @@ package com.workday.plugin.omstest
 import LocalProcessHandler
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.KillableProcessHandler
-import com.intellij.execution.process.OSProcessHandler
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import com.workday.plugin.omstest.local.LocalTestExecutor
 import com.workday.plugin.omstest.remote.RemoteTestExecutor.runTestWithHost
 import com.workday.plugin.omstest.util.LastTestStorage
 import java.io.File
@@ -24,7 +22,7 @@ class ReRunLastTest : AnAction() {
                 val runTabName = LastTestStorage.runTabName
                 val targetName = LastTestStorage.targetName
 
-                if ( runTabName == null || targetName == null) {
+                if (runTabName == null || targetName == null) {
                     showMissingDialog(project)
                     return
                 }
@@ -40,7 +38,7 @@ class ReRunLastTest : AnAction() {
                 cmdLine.workDirectory = File(project.basePath ?: ".")
 
                 val osHandler = KillableProcessHandler(cmdLine)
-                val processHandler = LocalProcessHandler(osHandler) // Wrap it
+                LocalProcessHandler(osHandler) // Wrap it
 
 //                LocalTestExecutor.runLocalCommand(project, runTabName, targetName, processHandler)
             }

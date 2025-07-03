@@ -72,7 +72,7 @@ object RemoteTestExecutor {
         processHandler.addProcessListener(object : ProcessAdapter() {
             override fun processTerminated(event: ProcessEvent) {
                 val junitTestPanel = JunitTestPanel()
-                val path = project!!.basePath + "/build/test-results/legacy-xml"
+                val path = project.basePath + "/build/test-results/legacy-xml"
                 junitTestPanel.displayParsedResults(processHandler, path) {
                     // Optional cleanup
                 }
@@ -81,7 +81,7 @@ object RemoteTestExecutor {
         processHandler.addProcessListener(object : ProcessAdapter() {
             override fun processTerminated(event: ProcessEvent) {
                 val junitTestPanel = JunitTestPanel()
-                val path = project!!.basePath
+                val path = project.basePath
                 junitTestPanel.displayParsedResults(processHandler, path) {
                     // Optional cleanup
                 }
@@ -98,7 +98,7 @@ object RemoteTestExecutor {
 
         RunContentManager.getInstance(project)
             .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
-        return consoleView;
+        return consoleView
 
     }
 

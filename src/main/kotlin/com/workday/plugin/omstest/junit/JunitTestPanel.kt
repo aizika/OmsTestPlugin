@@ -19,8 +19,6 @@ class JunitTestPanel {
 
     /**
      * Displays parsed JUnit test results from a file in the IntelliJ test runner console.
-     *
-     * @param project The current IntelliJ project.
      */
     fun displayParsedResults(
         processHandler: ProcessHandler,
