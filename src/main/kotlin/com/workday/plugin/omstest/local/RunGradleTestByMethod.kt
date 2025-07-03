@@ -21,24 +21,6 @@ import java.io.File
  * @since Jun-2025
  */
 class RunGradleTestByMethod : AnAction() {
-//    override fun actionPerformed(event: AnActionEvent) {
-//        val target = TargetResolver.resolveMethodTarget(event) ?: return
-//        val targetName = "-PtestMethod=${target.fqName}"
-//        val commandParts = listOf(
-//            "./gradlew",
-//            targetName,
-//            ":runTestJmx",
-//            "-s"
-//        )
-//        LastTestStorage.setLocal(target.runTabName, targetName)
-//
-//        val cmdLine = GeneralCommandLine(commandParts)
-//        cmdLine.workDirectory = File(event.project!!.basePath ?: ".")
-//
-//        val processHandler = KillableProcessHandler(cmdLine)
-//        LocalTestExecutor.runLocalCommand(event.project, target.runTabName, targetName, processHandler)
-//    }
-
     override fun actionPerformed(event: AnActionEvent) {
         val target = TargetResolver.resolveMethodTarget(event) ?: return
         val targetName = "-PtestMethod=${target.fqName}"

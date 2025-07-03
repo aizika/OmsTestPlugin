@@ -7,6 +7,7 @@ import com.intellij.execution.process.OSProcessHandler
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.workday.plugin.omstest.util.JunitProcessHandler
 import com.workday.plugin.omstest.util.LastTestStorage
 import com.workday.plugin.omstest.util.TargetResolver
 import com.workday.plugin.omstest.util.VisibilityManager
@@ -36,8 +37,8 @@ class RunGradleTestByClass : AnAction() {
         cmdLine.workDirectory = File(event.project!!.basePath ?: ".")
 
         val osHandler = KillableProcessHandler(cmdLine)
-        val processHandler = LocalProcessHandler(osHandler) // Wrap it
-//        LocalTestExecutor.runLocalCommand(event.project, target.runTabName, targetName, processHandler)
+        val processHandler = JunitProcessHandler() // Wrap it
+        LocalTestExecutor.runLocalCommand(event.project, target.runTabName, targetName, processHandler)
 
     }
 
