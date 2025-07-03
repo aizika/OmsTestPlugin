@@ -9,7 +9,6 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiIdentifier
-import com.intellij.psi.PsiJavaFile
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.PsiUtil
@@ -103,7 +102,7 @@ fun resolveMethodTarget(event: AnActionEvent): TestTarget? {
     }
 
     fun resolveClassTarget(event: AnActionEvent): TestTarget? {
-        val project = event.project ?: return null
+        event.project ?: return null
         val editor = event.getData(CommonDataKeys.EDITOR) ?: return null
         val file = event.getData(CommonDataKeys.PSI_FILE) ?: return null
         val offset = editor.caretModel.offset
@@ -138,10 +137,6 @@ fun resolveMethodTarget(event: AnActionEvent): TestTarget? {
 }
 
 object TargetResolverUtil {
-    fun findContainingClass(context: ResolvedContext): PsiClass? {
-        return PsiUtil.getTopLevelClass(context.element)
-            ?: (context.file as? PsiJavaFile)?.classes?.firstOrNull()
-    }
 
     fun qualifiedNameOrError(psiClass: PsiClass): String? {
         return psiClass.qualifiedName
@@ -153,24 +148,6 @@ object TargetResolverUtil {
             Messages.showErrorDialog(project, message, "Test Resolver Error")
         }
         return null
-    }
-
-    fun resolveCommonContext(e: AnActionEvent): ResolvedContext? {
-        val project = e.project ?: return null
-
-        val editor = e.getData(CommonDataKeys.EDITOR)
-        val file = e.getData(CommonDataKeys.PSI_FILE)
-
-        val elementFromEditor = editor?.let {
-            file?.findElementAt(it.caretModel.offset)
-        }
-
-        val elementFromSelection = e.getData(CommonDataKeys.PSI_ELEMENT)
-
-        val element = elementFromEditor ?: elementFromSelection
-        ?: return showError(project, "No code element found at cursor or selection.")
-
-        return ResolvedContext(project, editor, file, element)
     }
 
     fun getTestCategory(psiClass: PsiClass): String {
