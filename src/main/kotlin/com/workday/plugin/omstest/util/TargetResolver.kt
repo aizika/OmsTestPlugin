@@ -2,12 +2,10 @@ package com.workday.plugin.omstest.util
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiIdentifier
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.util.PsiTreeUtil
@@ -17,13 +15,6 @@ data class TestTarget(
     val fqName: String,
     val category: String,
     val runTabName: String
-)
-
-data class ResolvedContext(
-    val project: Project,
-    val editor: Editor?,
-    val file: PsiFile?,
-    val element: PsiElement
 )
 
 object ErrorHandlingContext {
