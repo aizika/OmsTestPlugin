@@ -14,12 +14,7 @@ import com.intellij.psi.PsiMethod
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.PsiUtil
 
-data class MethodTarget(
-    val fqName: String,
-    val runTabName: String
-)
-
-data class ClassTarget(
+data class TestTarget(
     val fqName: String,
     val category: String,
     val runTabName: String
@@ -43,17 +38,34 @@ object ErrorHandlingContext {
 }
 
 object TargetResolver {
-    fun resolveMethodTargetQuietly(element: PsiElement): MethodTarget? {
+    fun resolveMethodTargetQuietly(element: PsiElement): TestTarget? {
         ErrorHandlingContext.setQuiet()
         return resolveMethodTargetCommon(element)
     }
 
-    fun resolveMethodTarget(e: AnActionEvent): MethodTarget? {
-        val context = TargetResolverUtil.resolveCommonContext(e) ?: return null
-        return resolveMethodTargetCommon(context.element)
-    }
+fun resolveMethodTarget(event: AnActionEvent): TestTarget? {
+    event.project ?: return null
+    val editor = event.getData(CommonDataKeys.EDITOR) ?: return null
+    val file = event.getData(CommonDataKeys.PSI_FILE) ?: return null
+    val offset = editor.caretModel.offset
 
-    private fun resolveMethodTargetCommon(element: PsiElement): MethodTarget? {
+    val element = file.findElementAt(offset) ?: return null
+    val method = PsiTreeUtil.getParentOfType(element, PsiMethod::class.java) ?: return null
+    val psiClass = method.containingClass ?: return null
+
+    val fqMethodName = "${psiClass.qualifiedName}@${method.name}"
+    val category = TargetResolverUtil.getTestCategory(psiClass)
+        .takeIf { it.isNotEmpty() }
+        ?: return TargetResolverUtil.showError(psiClass.project, "Missing or malformed @Tag annotation.")
+
+    return TestTarget(
+        fqName = fqMethodName,
+        category,
+        runTabName = method.name
+    )
+}
+
+    private fun resolveMethodTargetCommon(element: PsiElement): TestTarget? {
         val method = when (element) {
             is PsiMethod -> element
             is PsiIdentifier -> element.parent as? PsiMethod
@@ -72,27 +84,46 @@ object TargetResolver {
         val qualifiedName = psiClass.qualifiedName ?: return null
 
         val fqMethodName = "$qualifiedName@${method.name}"
+        val category = TargetResolverUtil.getTestCategory(psiClass)
+            .takeIf { it.isNotEmpty() }
+            ?: return TargetResolverUtil.showError(psiClass.project, "Missing or malformed @Tag annotation.")
 
-        return MethodTarget(fqMethodName, method.name)
+        return TestTarget(
+            fqName = fqMethodName,
+            category,
+            runTabName = psiClass.name ?: "UnnamedClass"
+        )
     }
 
 
-    fun resolveClassTargetQuietly(psiElement: PsiElement): ClassTarget? {
+    fun resolveClassTargetQuietly(psiElement: PsiElement): TestTarget? {
         ErrorHandlingContext.setQuiet()
         val psiClass = PsiTreeUtil.getParentOfType(psiElement, PsiClass::class.java) ?: return null
         return resolveClassTargetCommon(psiClass)
     }
 
-    fun resolveClassTarget(e: AnActionEvent): ClassTarget? {
-        val context = TargetResolverUtil.resolveCommonContext(e) ?: return null
+    fun resolveClassTarget(event: AnActionEvent): TestTarget? {
+        val project = event.project ?: return null
+        val editor = event.getData(CommonDataKeys.EDITOR) ?: return null
+        val file = event.getData(CommonDataKeys.PSI_FILE) ?: return null
+        val offset = editor.caretModel.offset
 
-        val psiClass = PsiTreeUtil.getParentOfType(context.element, PsiClass::class.java)
-            ?: TargetResolverUtil.findContainingClass(context)
-            ?: return TargetResolverUtil.showError(context.project, "No test class found at cursor.")
-        return resolveClassTargetCommon(psiClass)
+        val element = file.findElementAt(offset) ?: return null
+        val psiClass = PsiTreeUtil.getParentOfType(element, PsiClass::class.java) ?: return null
+
+        val fqClassName = psiClass.qualifiedName ?: return null
+        val category = TargetResolverUtil.getTestCategory(psiClass)
+            .takeIf { it.isNotEmpty() }
+            ?: return TargetResolverUtil.showError(psiClass.project, "Missing or malformed @Tag annotation.")
+
+        return TestTarget(
+            fqName = fqClassName,
+            category,
+            runTabName = psiClass.name ?: "UnnamedClass"
+        )
     }
 
-    private fun resolveClassTargetCommon(psiClass: PsiClass): ClassTarget? {
+    private fun resolveClassTargetCommon(psiClass: PsiClass): TestTarget? {
         val qualifiedName = TargetResolverUtil.qualifiedNameOrError(psiClass) ?: return null
 
         val category = TargetResolverUtil.getTestCategory(psiClass)
@@ -101,7 +132,7 @@ object TargetResolver {
 
         val label = psiClass.name ?: "Run Test"
 
-        return ClassTarget(qualifiedName, category, label)
+        return TestTarget(qualifiedName, category, label)
     }
 
 }

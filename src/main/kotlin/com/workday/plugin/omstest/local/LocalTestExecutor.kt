@@ -33,9 +33,6 @@ object LocalTestExecutor {
             processHandler.pushOutput(msg + "\n", ProcessOutputTypes.STDOUT)
         }
 
-        log("🚀 runLocalCommand started")
-        log("🔧 targetName: $targetName")
-
         val console = ParsedResultConsole()
         console.initAndShow(project, processHandler)
         val consoleView = console.consoleView!!
