@@ -1,6 +1,8 @@
 package com.workday.plugin.omstest.remote
 
 import com.intellij.execution.executors.DefaultRunExecutor
+import com.intellij.execution.process.ProcessAdapter
+import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.ConsoleView
@@ -62,10 +64,29 @@ object RemoteTestExecutor {
         runTestWithHost(project, fqTestName, jmxParams, host, label)
     }
 
-    fun getConsoleViewAA(project: Project, processHandler: ProcessHandler): ConsoleView {
+
+    fun getResultConsoleView(project: Project, processHandler: ProcessHandler): ConsoleView {
         val console = ParsedResultConsole()
         console.initAndShow(project, processHandler)
         val consoleView = console.consoleView!!
+        processHandler.addProcessListener(object : ProcessAdapter() {
+            override fun processTerminated(event: ProcessEvent) {
+                val junitTestPanel = JunitTestPanel()
+                val path = project!!.basePath + "/build/test-results/legacy-xml"
+                junitTestPanel.displayParsedResults(processHandler, path) {
+                    // Optional cleanup
+                }
+            }
+        })
+        processHandler.addProcessListener(object : ProcessAdapter() {
+            override fun processTerminated(event: ProcessEvent) {
+                val junitTestPanel = JunitTestPanel()
+                val path = project!!.basePath
+                junitTestPanel.displayParsedResults(processHandler, path) {
+                    // Optional cleanup
+                }
+            }
+        })
         processHandler.startNotify()
 
         val descriptor = RunContentDescriptor(
@@ -90,21 +111,7 @@ object RemoteTestExecutor {
     ) {
         LastTestStorage.setRemote(host, fqTestName, jmxParams, runTabName)
         val processHandler = JunitProcessHandler()
-//        val console = ParsedResultConsole()
-//        console.initAndShow(project, processHandler)
-//        val consoleView = console.consoleView!!
-//        processHandler.start()
-//
-//        val descriptor = RunContentDescriptor(
-//            consoleView,
-//            null,
-//            consoleView.component,
-//            "$runTabName on $host"
-//        )
-//
-//        RunContentManager.getInstance(project)
-//            .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)'
-        val consoleView = getConsoleViewAA(project, processHandler)
+        val consoleView = getResultConsoleView(project, processHandler)
 
         val jmxInput = """
             open localhost:12016
@@ -120,11 +127,11 @@ object RemoteTestExecutor {
 
         ApplicationManager.getApplication().executeOnPooledThread {
             val junitTestPanel = JunitTestPanel()
-            runCommand(sshCommand, consoleView, processHandler, "Running test on $host")
-            runCommand(scpCommand, consoleView, processHandler, "Fetching logs from $host")
+            runRemoteCommand(sshCommand, consoleView, processHandler, "Running test on $host")
+            runRemoteCommand(scpCommand, consoleView, processHandler, "Fetching logs from $host")
 
             notification.expire()
-            junitTestPanel.displayParsedResults(project, processHandler) {
+            junitTestPanel.displayParsedResults(processHandler, project.basePath) {
                 processHandler.finish()
             }
 
@@ -150,7 +157,7 @@ object RemoteTestExecutor {
             .also { it.notify(project) }
     }
 
-    private fun runCommand(command: String, console: ConsoleView, processHandler: JunitProcessHandler, title: String) {
+    private fun runRemoteCommand(command: String, console: ConsoleView, processHandler: JunitProcessHandler, title: String) {
         console.print("\n> $title\n", ConsoleViewContentType.SYSTEM_OUTPUT)
         processHandler.pushOutput("$title\n", ProcessOutputTypes.STDOUT)
         try {

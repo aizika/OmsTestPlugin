@@ -1,11 +1,12 @@
 package com.workday.plugin.omstest.local
 
+import LocalProcessHandler
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.process.KillableProcessHandler
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.workday.plugin.omstest.junit.JunitTestPanel
 import com.workday.plugin.omstest.util.LastTestStorage
 import com.workday.plugin.omstest.util.TargetResolver
 import com.workday.plugin.omstest.util.VisibilityManager
@@ -34,9 +35,9 @@ class RunGradleTestByClass : AnAction() {
         val cmdLine = GeneralCommandLine(commandParts)
         cmdLine.workDirectory = File(event.project!!.basePath ?: ".")
 
-        val processHandler = OSProcessHandler(cmdLine)
-        LocalTestExecutor.runCommand(event.project, target.runTabName, targetName, processHandler)
-        JunitTestPanel().displayParsedResults(event.project!!, processHandler)
+        val osHandler = KillableProcessHandler(cmdLine)
+        val processHandler = LocalProcessHandler(osHandler) // Wrap it
+//        LocalTestExecutor.runLocalCommand(event.project, target.runTabName, targetName, processHandler)
 
     }
 

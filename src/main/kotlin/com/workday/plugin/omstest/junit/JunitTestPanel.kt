@@ -3,7 +3,6 @@ package com.workday.plugin.omstest.junit
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.project.Project
 import java.io.File
 
 private const val TEST_JUNIT_JUPITER_XML = "TEST-junit-jupiter.xml"
@@ -23,8 +22,12 @@ class JunitTestPanel {
      *
      * @param project The current IntelliJ project.
      */
-    fun displayParsedResults(project: Project, processHandler: ProcessHandler, onDone: () -> Unit = {}) {
-        val logFile = File(project.basePath, TEST_JUNIT_JUPITER_XML)
+    fun displayParsedResults(
+        processHandler: ProcessHandler,
+        path: String?,
+        onDone: () -> Unit = {}
+    ) {
+        val logFile = File(path, TEST_JUNIT_JUPITER_XML)
         if (!logFile.exists()) {
             onDone()
             return
