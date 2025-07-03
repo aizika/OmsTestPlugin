@@ -20,7 +20,7 @@ class MyRunLineMarkerContributor : RunLineMarkerContributor() {
         val classGroupActions = classGroup.getChildren(null)
 
         if (element is PsiIdentifier) {
-            when (val parent = element.parent) {
+            when (element.parent) {
                 is PsiMethod -> {
                     return Info(
                         AllIcons.RunConfigurations.TestState.Run,

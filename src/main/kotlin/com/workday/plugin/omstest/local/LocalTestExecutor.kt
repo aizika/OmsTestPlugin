@@ -51,7 +51,7 @@ object LocalTestExecutor {
 
         // Optional: Add toolbar button
         val actionGroup = DefaultActionGroup().apply {
-            add(object : AnAction("Re-run Test") {
+            add(object : AnAction("Re-Run Test") {
                 override fun actionPerformed(e: AnActionEvent) {
                     runLocalCommand(project, runTabName, targetName, JunitProcessHandler()) // or reuse
                 }

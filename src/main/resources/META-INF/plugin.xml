@@ -73,23 +73,41 @@
                     description="Re-run the last executed test command"
                     icon="AllIcons.Actions.Rerun"/>
         </group>
+
         <!-- Method-level group -->
         <group id="OmsTestMethodGroup"
                text="OMS Method Tests"
                description="Run OMS test method"
                popup="true">
             <separator text="OMS"/>
-            <reference ref="RunRemoteTestByMethod"/>
-            <reference ref="RunGradleTestByMethod"/>
+            <action id="RunRemoteTestByMethod_remote"
+                    class="com.workday.plugin.omstest.remote.RunRemoteTestByMethod"
+                    text="Run on SUV"
+                    description="Run a test method on remote OMS via JMX"
+                    icon="/icons/omsTestMethodIcon.svg"/>
+            <action id="RunGradleTestByMethod_local"
+                    class="com.workday.plugin.omstest.local.RunGradleTestByMethod"
+                    text="Run on Local"
+                    description="Run selected test method via Gradle"
+                    icon="/icons/omsTestMethodIcon.svg"/>
         </group>
+
         <!-- Class-level group -->
         <group id="OmsTestClassGroup"
                text="OMS Class Tests"
                description="Run OMS test class"
                popup="true">
             <separator text="OMS"/>
-            <reference ref="RunRemoteTestByClass"/>
-            <reference ref="RunGradleTestByClass"/>
+            <action id="RunRemoteTestByClass_remote"
+                    class="com.workday.plugin.omstest.remote.RunRemoteTestByClass"
+                    text="Run on SUV"
+                    description="Runs the test class remotely via OMS plugin"
+                    icon="/icons/omsTestClassIcon.svg"/>
+            <action id="RunGradleTestByClass_local"
+                    class="com.workday.plugin.omstest.local.RunGradleTestByClass"
+                    text="Run on Local"
+                    description="Run selected test class via Gradle"
+                    icon="/icons/omsTestClassIcon.svg"/>
         </group>
         <action id="ReRunOmsTestAction"
                 class="com.workday.plugin.omstest.ReRunLastTest"

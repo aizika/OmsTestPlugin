@@ -45,7 +45,7 @@ class ParsedResultConsole {
 
         // Optional: Add a toolbar with a "Re-run Test" button
         val actionGroup = DefaultActionGroup().apply {
-            add(object : AnAction("Re-run Test") {
+            add(object : AnAction("Re-Run Test") {
                 override fun actionPerformed(e: AnActionEvent) {
                     // You can adjust this behavior as needed
                     ParsedResultConsole().initAndShow(project, handler)
