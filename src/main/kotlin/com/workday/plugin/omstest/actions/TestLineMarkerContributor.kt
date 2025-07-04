@@ -30,15 +30,14 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
                 is PsiMethod -> {
                     return Info(
                         AllIcons.RunConfigurations.TestState.Run,
-                        { "" },
+                        { "Run OMS test method" },
                         *methodGroupActions
                     )
                 }
-
                 is PsiClass -> {
                     return Info(
                         AllIcons.RunConfigurations.TestState.Run,
-                        { "" },
+                        { "Run OMS test class" },
                         *classGroupActions
                     )
                 }
