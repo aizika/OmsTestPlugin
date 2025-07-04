@@ -7,22 +7,17 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
-import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.execution.ui.RunContentManager
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
-import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.workday.plugin.omstest.ReRunLastTest
+import com.workday.plugin.omstest.junit.JunitDescriptor
 import com.workday.plugin.omstest.junit.JunitTestPanel
-import com.workday.plugin.omstest.junit.ParsedResultConsole
 import com.workday.plugin.omstest.util.JunitProcessHandler
 import com.workday.plugin.omstest.util.LastTestStorage
-import javax.swing.JPanel
-import java.awt.BorderLayout
+
 /**
  * Utility object for running remote tests on a specified host.
  * Provides methods to run test classes and methods with JMX parameters.
@@ -46,9 +41,7 @@ object RemoteTestExecutor {
     }
 
 
-    fun getResultConsoleView(project: Project, processHandler: ProcessHandler): ConsoleView {
-        val consoleView = ParsedResultConsole().createConsoleView(project, processHandler)
-
+    fun attachProcessListener(project: Project, processHandler: ProcessHandler) {
         // Attach process listeners
         val resultPath = project.basePath + "/build/test-results/legacy-xml"
         processHandler.addProcessListener(object : ProcessAdapter() {
@@ -59,32 +52,7 @@ object RemoteTestExecutor {
                 }
             }
         })
-        processHandler.startNotify()
 
-        // 🔧 Create custom toolbar with a Re-run button
-        val toolbarGroup = DefaultActionGroup().apply {
-            add(ReRunLastTest())  // Make sure this action is defined and registered in plugin.xml
-        }
-
-        val toolbar = ActionManager.getInstance().createActionToolbar("OmsToolbar", toolbarGroup, false)
-        toolbar.setTargetComponent(consoleView.component)
-
-        // Wrap the console and toolbar into a JPanel
-        val consolePanel = JPanel(BorderLayout())
-        consolePanel.add(toolbar.component, BorderLayout.WEST)
-        consolePanel.add(consoleView.component, BorderLayout.CENTER)
-
-        val descriptor = RunContentDescriptor(
-            consoleView,
-            processHandler,
-            consolePanel,  // Use the panel with toolbar
-            "OMS Test Results"
-        )
-
-        RunContentManager.getInstance(project)
-            .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
-
-        return consoleView
     }
 
     fun runTestWithHost(
@@ -94,9 +62,15 @@ object RemoteTestExecutor {
         host: String,
         runTabName: String
     ) {
+
         LastTestStorage.setRemote(host, fqTestName, jmxParams, runTabName)
-        val processHandler = JunitProcessHandler()
-        val consoleView = getResultConsoleView(project, processHandler)
+        val descriptor = JunitDescriptor.createDescriptor(project, runTabName)
+
+        val processHandler = descriptor.getMyProcessHandler()
+        val consoleView = descriptor.getMyConsoleView()
+        attachProcessListener(project, processHandler)
+        RunContentManager.getInstance(project)
+            .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
 
         val jmxInput = """
             open localhost:12016
@@ -110,6 +84,7 @@ object RemoteTestExecutor {
 
         val notification = notifyUser(project)
 
+        processHandler.startNotify()
         ApplicationManager.getApplication().executeOnPooledThread {
             val junitTestPanel = JunitTestPanel()
             runRemoteCommand(sshCommand, consoleView, processHandler, "Running test on $host")
@@ -142,7 +117,12 @@ object RemoteTestExecutor {
             .also { it.notify(project) }
     }
 
-    private fun runRemoteCommand(command: String, console: ConsoleView, processHandler: JunitProcessHandler, title: String) {
+    private fun runRemoteCommand(
+        command: String,
+        console: ConsoleView,
+        processHandler: JunitProcessHandler,
+        title: String
+    ) {
         console.print("\n> $title\n", ConsoleViewContentType.SYSTEM_OUTPUT)
         processHandler.pushOutput("$title\n", ProcessOutputTypes.STDOUT)
         try {

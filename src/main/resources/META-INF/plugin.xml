@@ -22,7 +22,7 @@
                            toolWindowId="Run"/>
         <runLineMarkerContributor
                 language="JAVA"
-                implementationClass="com.workday.plugin.omstest.junit.MyRunLineMarkerContributor"/>
+                implementationClass="com.workday.plugin.omstest.actions.TestLineMarkerContributor"/>
     </extensions>
     <actions>
         <group id="OmsTestActionsGroup"

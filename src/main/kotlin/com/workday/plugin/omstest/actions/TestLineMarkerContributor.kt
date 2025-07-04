@@ -1,4 +1,4 @@
-package com.workday.plugin.omstest.junit
+package com.workday.plugin.omstest.actions
 
 import com.intellij.execution.lineMarker.RunLineMarkerContributor
 import com.intellij.icons.AllIcons
@@ -9,7 +9,13 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiIdentifier
 import com.intellij.psi.PsiMethod
 
-class MyRunLineMarkerContributor : RunLineMarkerContributor() {
+/**
+ * Add OMS menu items to the popup menu when clicking on Intellij test icons in the gutter.
+ *
+ * @author alexander.aizikivsky
+ * @since Jun-2025
+ */
+class TestLineMarkerContributor : RunLineMarkerContributor() {
 
     override fun getInfo(element: PsiElement): Info? {
         val actionManager = ActionManager.getInstance()
@@ -24,14 +30,15 @@ class MyRunLineMarkerContributor : RunLineMarkerContributor() {
                 is PsiMethod -> {
                     return Info(
                         AllIcons.RunConfigurations.TestState.Run,
-                        { "Run OMS test method" },
+                        { "" },
                         *methodGroupActions
                     )
                 }
+
                 is PsiClass -> {
                     return Info(
                         AllIcons.RunConfigurations.TestState.Run,
-                        { "Run OMS test class" },
+                        { "" },
                         *classGroupActions
                     )
                 }

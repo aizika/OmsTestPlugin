@@ -4,6 +4,7 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.openapi.application.ApplicationManager
 import java.io.File
+import javax.swing.JPanel
 
 private const val TEST_JUNIT_JUPITER_XML = "TEST-junit-jupiter.xml"
 
@@ -15,7 +16,7 @@ private const val TEST_JUNIT_JUPITER_XML = "TEST-junit-jupiter.xml"
  * @author alexander.aizikivsky
  * @since Jun-2025
  */
-class JunitTestPanel {
+class JunitTestPanel: JPanel() {
 
     /**
      * Displays parsed JUnit test results from a file in the IntelliJ test runner console.

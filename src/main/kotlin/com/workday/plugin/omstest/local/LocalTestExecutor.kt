@@ -28,6 +28,7 @@ object LocalTestExecutor {
 
         val junitDescriptor = JunitDescriptor.createDescriptor(project, runTabName)
         val processHandler = junitDescriptor.getMyProcessHandler()
+        processHandler.start()
 
         fun log(msg: String) {
             processHandler.pushOutput("$msg\n", ProcessOutputTypes.STDOUT)

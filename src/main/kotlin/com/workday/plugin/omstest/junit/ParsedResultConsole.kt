@@ -1,55 +1,17 @@
 package com.workday.plugin.omstest.junit
 
 import com.intellij.execution.Executor
-import com.intellij.execution.Location
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.execution.configurations.ConfigurationType
 import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.configurations.RunConfigurationBase
 import com.intellij.execution.configurations.RunProfileState
-import com.intellij.execution.executors.DefaultRunExecutor
-import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
-import com.intellij.execution.testframework.sm.SMTestRunnerConnectionUtil
-import com.intellij.execution.testframework.sm.runner.SMTRunnerConsoleProperties
-import com.intellij.execution.testframework.sm.runner.SMTestLocator
-import com.intellij.execution.ui.ConsoleView
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiElement
-import com.intellij.psi.search.GlobalSearchScope
 import javax.swing.JPanel
 
-/**
- * Creates and displays a test console UI backed by a run configuration for parsed test results.
- */
-class ParsedResultConsole {
-
-    fun createConsoleView(project: Project, handler: ProcessHandler): ConsoleView {
-        val config = ParsedResultRunConfiguration(project)
-        val consoleProperties = object : SMTRunnerConsoleProperties(
-            config,
-            "ParsedResults",
-            DefaultRunExecutor.getRunExecutorInstance()
-        ) {
-            override fun getTestLocator(): SMTestLocator = NoOpTestLocator
-        }
-
-        val view = SMTestRunnerConnectionUtil.createConsole("ParsedResults", consoleProperties)
-        view.attachToProcess(handler)
-        return view
-    }
-
-    private object NoOpTestLocator : SMTestLocator {
-        override fun getLocation(
-            protocol: String,
-            path: String,
-            project: Project,
-            scope: GlobalSearchScope
-        ): List<Location<out PsiElement>> = emptyList()
-    }
-}
 
 /**
  * RunConfiguration used for displaying parsed JUnit results in the test UI.
