@@ -69,7 +69,7 @@ object LocalTestExecutor {
                     log("XML file found, parsing test results")
                     ApplicationManager.getApplication().invokeLater {
                         val junitTestPanel = JunitTestPanel()
-                        junitTestPanel.displayParsedResults(processHandler!!, path) {
+                        junitTestPanel.displayParsedResults(processHandler, path) {
                             log("Test results displayed")
                             processHandler.finish()
                         }

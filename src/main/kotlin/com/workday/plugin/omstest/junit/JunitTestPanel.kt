@@ -2,18 +2,8 @@ package com.workday.plugin.omstest.junit
 
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
-import com.intellij.execution.ui.ConsoleView
-import com.intellij.execution.ui.RunContentDescriptor
-import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.project.Project
-import com.workday.plugin.omstest.ReRunLastTest
-import com.workday.plugin.omstest.util.JunitProcessHandler
-import java.awt.BorderLayout
 import java.io.File
-import javax.swing.JComponent
-import javax.swing.JPanel
 
 private const val TEST_JUNIT_JUPITER_XML = "TEST-junit-jupiter.xml"
 
@@ -50,7 +40,6 @@ class JunitTestPanel {
             }
         }
     }
-
 
 
     private fun displayTestSuiteResult(suite: TestSuite, processHandler: ProcessHandler) {
