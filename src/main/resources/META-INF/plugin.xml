@@ -60,7 +60,7 @@
 
             <separator/>
             <action id="ReRunLastTest"
-                    class="com.workday.plugin.omstest.ReRunLastTest"
+                    class="com.workday.plugin.omstest.actions.ReRunLastTest"
                     text="Re-Run Last Test"
                     description="Re-run the last executed test command"
                     icon="AllIcons.Actions.Rerun"/>
@@ -102,7 +102,7 @@
                     icon="/icons/omsTestClassIcon.svg"/>
         </group>
         <action id="ReRunOmsTestAction"
-                class="com.workday.plugin.omstest.ReRunLastTest"
+                class="com.workday.plugin.omstest.actions.ReRunLastTest"
                 text="Re-Run OMS Test"
                 description="Re-Run OMS Test"
                 icon="AllIcons.Actions.Rerun"/>

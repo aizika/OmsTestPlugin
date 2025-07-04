@@ -1,9 +1,6 @@
 package com.workday.plugin.omstest.remote
 
 import com.intellij.execution.executors.DefaultRunExecutor
-import com.intellij.execution.process.ProcessAdapter
-import com.intellij.execution.process.ProcessEvent
-import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
@@ -14,8 +11,8 @@ import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.workday.plugin.omstest.junit.JunitDescriptor
-import com.workday.plugin.omstest.junit.JunitTestPanel
-import com.workday.plugin.omstest.util.JunitProcessHandler
+import com.workday.plugin.omstest.junit.TestResultPresenter
+import com.workday.plugin.omstest.util.TestProcessHandler
 import com.workday.plugin.omstest.util.LastTestStorage
 
 /**
@@ -41,20 +38,6 @@ object RemoteTestExecutor {
     }
 
 
-    fun attachProcessListener(project: Project, processHandler: ProcessHandler) {
-        // Attach process listeners
-        val resultPath = project.basePath + "/build/test-results/legacy-xml"
-        processHandler.addProcessListener(object : ProcessAdapter() {
-            override fun processTerminated(event: ProcessEvent) {
-                val junitTestPanel = JunitTestPanel()
-                junitTestPanel.displayParsedResults(processHandler, resultPath) {
-                    // Optional cleanup
-                }
-            }
-        })
-
-    }
-
     fun runTestWithHost(
         project: Project,
         fqTestName: String,
@@ -68,7 +51,6 @@ object RemoteTestExecutor {
 
         val processHandler = descriptor.getMyProcessHandler()
         val consoleView = descriptor.getMyConsoleView()
-        attachProcessListener(project, processHandler)
         RunContentManager.getInstance(project)
             .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
 
@@ -86,15 +68,13 @@ object RemoteTestExecutor {
 
         processHandler.startNotify()
         ApplicationManager.getApplication().executeOnPooledThread {
-            val junitTestPanel = JunitTestPanel()
             runRemoteCommand(sshCommand, consoleView, processHandler, "Running test on $host")
             runRemoteCommand(scpCommand, consoleView, processHandler, "Fetching logs from $host")
 
             notification.expire()
-            junitTestPanel.displayParsedResults(processHandler, project.basePath) {
+            TestResultPresenter().displayParsedResults(processHandler, project.basePath) {
                 processHandler.finish()
             }
-
         }
         println("[TEST-PANEL] Finished displayTestSuiteResult(...)")
     }
@@ -120,11 +100,10 @@ object RemoteTestExecutor {
     private fun runRemoteCommand(
         command: String,
         console: ConsoleView,
-        processHandler: JunitProcessHandler,
+        processHandler: TestProcessHandler,
         title: String
     ) {
         console.print("\n> $title\n", ConsoleViewContentType.SYSTEM_OUTPUT)
-        processHandler.pushOutput("$title\n", ProcessOutputTypes.STDOUT)
         try {
             val process = ProcessBuilder("/bin/sh", "-c", command)
                 .redirectErrorStream(true)
@@ -136,10 +115,8 @@ object RemoteTestExecutor {
 
             val exitCode = process.waitFor()
             console.print("Process exited with code $exitCode\n", ConsoleViewContentType.SYSTEM_OUTPUT)
-            processHandler.pushOutput("Process exited with code $exitCode\n", ProcessOutputTypes.STDOUT)
         } catch (e: Exception) {
             console.print("Error: ${e.message}\n", ConsoleViewContentType.ERROR_OUTPUT)
-            processHandler.pushOutput("Error: ${e.message}\n", ProcessOutputTypes.STDERR)
         }
     }
 }

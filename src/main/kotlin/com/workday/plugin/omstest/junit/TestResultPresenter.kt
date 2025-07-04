@@ -4,19 +4,16 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.openapi.application.ApplicationManager
 import java.io.File
-import javax.swing.JPanel
 
 private const val TEST_JUNIT_JUPITER_XML = "TEST-junit-jupiter.xml"
 
 /**
- * A panel for displaying parsed JUnit test results in the IntelliJ test runner console.
- * This class reads a JMX test result file, parses it, and displays the results in a structured format
- * as if they were real JUnit test results.
+ *
  *
  * @author alexander.aizikivsky
  * @since Jun-2025
  */
-class JunitTestPanel: JPanel() {
+class TestResultPresenter {
 
     /**
      * Displays parsed JUnit test results from a file in the IntelliJ test runner console.
@@ -33,8 +30,13 @@ class JunitTestPanel: JPanel() {
         }
 
 
+        /**
+         * Asynchronously parses the test results from the specified XML file using TestResultParser
+         * and displays them in the console.
+         * Uses ApplicationManager to run the parsing in a background thread and updates the UI on the EDT.
+         */
         ApplicationManager.getApplication().executeOnPooledThread {
-            val suite = JunitResultParser().parseTestSuite(logFile)
+            val suite = TestResultParser().parseTestSuite(logFile)
             ApplicationManager.getApplication().invokeLater {
                 suite?.let { displayTestSuiteResult(it, processHandler) }
                 onDone()
@@ -43,7 +45,7 @@ class JunitTestPanel: JPanel() {
     }
 
 
-    private fun displayTestSuiteResult(suite: TestSuite, processHandler: ProcessHandler) {
+    private fun displayTestSuiteResult(suite: TestSuiteResult, processHandler: ProcessHandler) {
 
         processHandler.notifyTextAvailable(
             "After suite started\n",
@@ -64,7 +66,7 @@ class JunitTestPanel: JPanel() {
             }
     }
 
-    private fun displayResults(results: Map<String, JunitTestResult>, processHandler: ProcessHandler) {
+    private fun displayResults(results: Map<String, TestMethodResult>, processHandler: ProcessHandler) {
         fun escapeTc(s: String): String =
             s.replace("|", "||")
                 .replace("'", "|'")

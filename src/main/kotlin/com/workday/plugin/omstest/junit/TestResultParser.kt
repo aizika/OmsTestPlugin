@@ -5,19 +5,19 @@ import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 
 /**
- * Parses a JUnit XML result file and extracts test results.
+ * Parses an XML result file and extracts test results.
  *
  * @author alexander.aizikivsky
  * @since Jun-2025
  */
-class JunitResultParser {
+class TestResultParser {
 
-    fun parseTestSuite(file: File): TestSuite? {
+    fun parseTestSuite(file: File): TestSuiteResult? {
         val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
         val suiteElement = document.getElementsByTagName("testsuite").item(0) as? Element ?: return null
 
         val testCases = suiteElement.getElementsByTagName("testcase")
-        val results = mutableListOf<JunitTestResult>()
+        val results = mutableListOf<TestMethodResult>()
         for (i in 0 until testCases.length) {
             val testCaseElement = testCases.item(i) as Element
             results += parseTestCase(testCaseElement)
@@ -25,7 +25,7 @@ class JunitResultParser {
 
         val time = suiteElement.getAttribute("time")
 
-        return TestSuite(
+        return TestSuiteResult(
             name = suiteElement.getAttribute("name"),
             tests = suiteElement.getAttribute("tests").toIntOrNull() ?: 0,
             skipped = suiteElement.getAttribute("skipped").toIntOrNull() ?: 0,
@@ -39,7 +39,7 @@ class JunitResultParser {
         )
     }
 
-    private fun parseTestCase(testCaseElement: Element): JunitTestResult {
+    private fun parseTestCase(testCaseElement: Element): TestMethodResult {
         val name = testCaseElement.getAttribute("name")
         val className = testCaseElement.getAttribute("classname")
         val time = testCaseElement.getAttribute("time")
@@ -59,7 +59,7 @@ class JunitResultParser {
             else -> Status.PASSED
         }
 
-        return JunitTestResult(
+        return TestMethodResult(
             name = name,
             className = className,
             timeInMillisStr = ( 1000.times(time.toDoubleOrNull()?:0.toDouble()) ).toInt().toString(),
@@ -113,7 +113,7 @@ enum class Status {
  * @property systemOut Standard output captured during the test execution.
  * @property systemErr Standard error output captured during the test execution.
  */
-data class JunitTestResult(
+data class TestMethodResult(
     val name: String,
     val className: String,
     val timeInMillisStr: String? = null,
@@ -127,7 +127,7 @@ data class JunitTestResult(
     val systemErr: String? = null
 )
 
-data class TestSuite(
+data class TestSuiteResult(
     val name: String,
     val tests: Int,
     val skipped: Int,
@@ -137,5 +137,5 @@ data class TestSuite(
     val hostname: String?,
     val timestamp: String?,
     val status: String?,
-    val results: List<JunitTestResult>
+    val results: List<TestMethodResult>
 )

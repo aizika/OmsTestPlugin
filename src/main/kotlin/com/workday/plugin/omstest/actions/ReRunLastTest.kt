@@ -1,4 +1,4 @@
-package com.workday.plugin.omstest
+package com.workday.plugin.omstest.actions
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.actionSystem.ActionUpdateThread
@@ -7,10 +7,17 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.workday.plugin.omstest.local.LocalTestExecutor
-import com.workday.plugin.omstest.remote.RemoteTestExecutor.runTestWithHost
+import com.workday.plugin.omstest.remote.RemoteTestExecutor
 import com.workday.plugin.omstest.util.LastTestStorage
 import java.io.File
 
+/**
+ * Action to re-run the last executed test in IntelliJ IDEA.
+ * It checks the environment (local or remote) and executes the appropriate command.
+ *
+ * @author alexander.aizikivsky
+ * @since Jun-2025
+ */
 class ReRunLastTest : AnAction() {
 
     override fun actionPerformed(e: AnActionEvent) {
@@ -49,7 +56,7 @@ class ReRunLastTest : AnAction() {
                     return
                 }
 
-                runTestWithHost(
+                RemoteTestExecutor.runTestWithHost(
                     project,
                     fqTestName,
                     jmxParams,

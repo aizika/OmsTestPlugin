@@ -13,14 +13,14 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
-import com.workday.plugin.omstest.ReRunLastTest
-import com.workday.plugin.omstest.util.JunitProcessHandler
+import com.workday.plugin.omstest.actions.ReRunLastTest
+import com.workday.plugin.omstest.util.TestProcessHandler
 import java.awt.BorderLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
 
 /**
- * This class represents a run content descriptor for JUnit test results.
+ * This class represents a UI content descriptor for JUnit test results in Run Tool Window.
  *
  *         +--------------------------------------------------------------------------------------+
  *         |                       Run Tool Window Tab ("OMS Test Results")                       |
@@ -47,14 +47,14 @@ import javax.swing.JPanel
 
 class JunitDescriptor(
     consoleView: ConsoleView?,
-    processHandler: JunitProcessHandler,
+    processHandler: TestProcessHandler,
     component: JComponent,
     displayName: String
 ) : RunContentDescriptor(consoleView, processHandler, component, displayName) {
 
     companion object {
         fun createDescriptor(project: Project, runTabName: String): JunitDescriptor {
-            val processHandler = JunitProcessHandler()
+            val processHandler = TestProcessHandler()
             val consoleView = createConsoleView(project, processHandler)
             val consolePanel = createJunitPanel(consoleView)
 
@@ -97,7 +97,7 @@ class JunitDescriptor(
 
     }
 
-    fun getMyProcessHandler(): JunitProcessHandler = processHandler as JunitProcessHandler
+    fun getMyProcessHandler(): TestProcessHandler = processHandler as TestProcessHandler
 
     fun getMyConsoleView(): ConsoleView = executionConsole as ConsoleView
 }

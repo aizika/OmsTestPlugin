@@ -6,7 +6,7 @@ import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.RunContentManager
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.workday.plugin.omstest.junit.JunitTestPanel
+import com.workday.plugin.omstest.junit.TestResultPresenter
 import com.workday.plugin.omstest.junit.JunitDescriptor
 import java.io.File
 
@@ -28,7 +28,7 @@ object LocalTestExecutor {
 
         val junitDescriptor = JunitDescriptor.createDescriptor(project, runTabName)
         val processHandler = junitDescriptor.getMyProcessHandler()
-        processHandler.start()
+        processHandler.startNotify()
 
         fun log(msg: String) {
             processHandler.pushOutput("$msg\n", ProcessOutputTypes.STDOUT)
@@ -69,8 +69,7 @@ object LocalTestExecutor {
                 if (xmlFile.exists()) {
                     log("XML file found, parsing test results")
                     ApplicationManager.getApplication().invokeLater {
-                        val junitTestPanel = JunitTestPanel()
-                        junitTestPanel.displayParsedResults(processHandler, path) {
+                        TestResultPresenter().displayParsedResults(processHandler, path) {
                             log("Test results displayed")
                             processHandler.finish()
                         }
