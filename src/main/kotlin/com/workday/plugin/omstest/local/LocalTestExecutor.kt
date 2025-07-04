@@ -5,6 +5,7 @@ import com.intellij.execution.executors.DefaultRunExecutor.getRunExecutorInstanc
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.execution.ui.RunContentManager
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -39,9 +40,7 @@ object LocalTestExecutor {
             processHandler.pushOutput("$msg\n", ProcessOutputTypes.STDOUT)
         }
 
-        val console = ParsedResultConsole()
-        console.initAndShow(project, processHandler)
-        val consoleView = console.consoleView!!
+        val consoleView = ParsedResultConsole().createConsoleView(project, processHandler)
 
         val basePath = project.basePath ?: "."
         val path = "$basePath/build/test-results/legacy-xml"
@@ -113,7 +112,8 @@ object LocalTestExecutor {
             consoleView,
             processHandler,
             consolePanel,
-            runTabName
+            runTabName,
+            AllIcons.Actions.Restart
         )
 
         RunContentManager.getInstance(project)

@@ -47,9 +47,7 @@ object RemoteTestExecutor {
 
 
     fun getResultConsoleView(project: Project, processHandler: ProcessHandler): ConsoleView {
-        val console = ParsedResultConsole()
-        console.initAndShow(project, processHandler)
-        val consoleView = console.consoleView!!
+        val consoleView = ParsedResultConsole().createConsoleView(project, processHandler)
 
         // Attach process listeners
         val resultPath = project.basePath + "/build/test-results/legacy-xml"
