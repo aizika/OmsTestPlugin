@@ -34,8 +34,7 @@ class RunLocalTestClass : AnAction() {
         val cmdLine = GeneralCommandLine(commandParts)
         cmdLine.workDirectory = File(event.project!!.basePath ?: ".")
 
-//        KillableProcessHandler(cmdLine)
-        val processHandler = JunitProcessHandler() // Wrap it
+        val processHandler = JunitProcessHandler()
         LocalTestExecutor.runLocalCommand(event.project, target.runTabName, targetName, processHandler)
 
     }
