@@ -1,4 +1,4 @@
-package com.workday.plugin.omstest.junit
+package com.workday.plugin.omstest.ui
 
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessOutputTypes
@@ -31,12 +31,12 @@ class TestResultPresenter {
 
 
         /**
-         * Asynchronously parses the test results from the specified XML file using TestResultParser
+         * Asynchronously parses the test results from the specified XML file using XmlResultParser
          * and displays them in the console.
          * Uses ApplicationManager to run the parsing in a background thread and updates the UI on the EDT.
          */
         ApplicationManager.getApplication().executeOnPooledThread {
-            val suite = TestResultParser().parseTestSuite(logFile)
+            val suite = XmlResultParser().parseTestSuite(logFile)
             ApplicationManager.getApplication().invokeLater {
                 suite?.let { displayTestSuiteResult(it, processHandler) }
                 onDone()

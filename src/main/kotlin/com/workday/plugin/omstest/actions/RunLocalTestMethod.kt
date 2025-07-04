@@ -4,10 +4,10 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.workday.plugin.omstest.local.LocalTestExecutor
-import com.workday.plugin.omstest.util.LastTestStorage
-import com.workday.plugin.omstest.util.TargetResolver
-import com.workday.plugin.omstest.util.VisibilityManager
+import com.workday.plugin.omstest.execution.LocalTestExecutor
+import com.workday.plugin.omstest.execution.LastTestStorage
+import com.workday.plugin.omstest.ui.TargetResolver
+import com.workday.plugin.omstest.ui.TargetVisibilityManager
 import java.io.File
 
 /**
@@ -36,7 +36,7 @@ class RunLocalTestMethod : AnAction() {
     }
 
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = VisibilityManager.isMethodContext(e)
+        e.presentation.isEnabledAndVisible = TargetVisibilityManager.isMethodContext(e)
     }
 
     override fun getActionUpdateThread(): ActionUpdateThread {

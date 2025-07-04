@@ -6,9 +6,9 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import com.workday.plugin.omstest.local.LocalTestExecutor
-import com.workday.plugin.omstest.remote.RemoteTestExecutor
-import com.workday.plugin.omstest.util.LastTestStorage
+import com.workday.plugin.omstest.execution.LocalTestExecutor
+import com.workday.plugin.omstest.execution.RemoteTestExecutor
+import com.workday.plugin.omstest.execution.LastTestStorage
 import java.io.File
 
 /**

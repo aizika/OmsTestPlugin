@@ -1,4 +1,4 @@
-package com.workday.plugin.omstest.junit
+package com.workday.plugin.omstest.ui
 
 import org.w3c.dom.Element
 import java.io.File
@@ -10,7 +10,7 @@ import javax.xml.parsers.DocumentBuilderFactory
  * @author alexander.aizikivsky
  * @since Jun-2025
  */
-class TestResultParser {
+class XmlResultParser {
 
     fun parseTestSuite(file: File): TestSuiteResult? {
         val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)

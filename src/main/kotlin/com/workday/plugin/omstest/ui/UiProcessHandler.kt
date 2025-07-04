@@ -1,4 +1,4 @@
-package com.workday.plugin.omstest.util
+package com.workday.plugin.omstest.ui
 
 import com.intellij.execution.process.ProcessHandler
 import java.io.OutputStream
@@ -10,7 +10,7 @@ import java.io.OutputStream
  * @author alexander.aizikivsky
  * @since Jun-2025
  */
-class TestProcessHandler : ProcessHandler() {
+class UiProcessHandler : ProcessHandler() {
 
     /**
      *  notifyProcessTerminated is protected, so we need this method to terminate the process.

@@ -3,9 +3,9 @@ package com.workday.plugin.omstest.actions
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.workday.plugin.omstest.remote.RemoteTestExecutor
-import com.workday.plugin.omstest.util.TargetResolver
-import com.workday.plugin.omstest.util.VisibilityManager
+import com.workday.plugin.omstest.execution.RemoteTestExecutor
+import com.workday.plugin.omstest.ui.TargetResolver
+import com.workday.plugin.omstest.ui.TargetVisibilityManager
 
 /**
  * Action to run a remote test for the selected Java method in IntelliJ IDEA.
@@ -32,6 +32,6 @@ class RunRemoteTestMethod : AnAction() {
     }
 
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = VisibilityManager.isMethodContext(e)
+        e.presentation.isEnabledAndVisible = TargetVisibilityManager.isMethodContext(e)
     }
 }

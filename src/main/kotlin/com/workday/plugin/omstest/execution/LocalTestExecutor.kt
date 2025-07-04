@@ -1,4 +1,4 @@
-package com.workday.plugin.omstest.local
+package com.workday.plugin.omstest.execution
 
 
 import com.intellij.execution.executors.DefaultRunExecutor.getRunExecutorInstance
@@ -6,8 +6,8 @@ import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.RunContentManager
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.workday.plugin.omstest.junit.TestResultPresenter
-import com.workday.plugin.omstest.junit.JunitDescriptor
+import com.workday.plugin.omstest.ui.TestResultPresenter
+import com.workday.plugin.omstest.ui.UiContentDescriptor
 import java.io.File
 
 /**
@@ -26,7 +26,7 @@ object LocalTestExecutor {
     ) {
         if (project == null) return
 
-        val junitDescriptor = JunitDescriptor.createDescriptor(project, runTabName)
+        val junitDescriptor = UiContentDescriptor.createDescriptor(project, runTabName)
         val processHandler = junitDescriptor.getMyProcessHandler()
         processHandler.startNotify()
 

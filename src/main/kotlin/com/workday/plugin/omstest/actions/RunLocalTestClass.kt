@@ -4,10 +4,10 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.workday.plugin.omstest.local.LocalTestExecutor
-import com.workday.plugin.omstest.util.LastTestStorage
-import com.workday.plugin.omstest.util.TargetResolver
-import com.workday.plugin.omstest.util.VisibilityManager
+import com.workday.plugin.omstest.execution.LocalTestExecutor
+import com.workday.plugin.omstest.execution.LastTestStorage
+import com.workday.plugin.omstest.ui.TargetResolver
+import com.workday.plugin.omstest.ui.TargetVisibilityManager
 import java.io.File
 
 /**
@@ -41,7 +41,7 @@ class RunLocalTestClass : AnAction() {
      * Enables the action if a Java class is found at the caret position.
      */
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = VisibilityManager.isClassContext(e)
+        e.presentation.isEnabledAndVisible = TargetVisibilityManager.isClassContext(e)
     }
 
     /**

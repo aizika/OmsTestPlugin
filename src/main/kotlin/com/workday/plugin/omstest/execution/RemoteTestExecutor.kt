@@ -1,4 +1,4 @@
-package com.workday.plugin.omstest.remote
+package com.workday.plugin.omstest.execution
 
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.process.ProcessOutputTypes
@@ -10,10 +10,10 @@ import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.workday.plugin.omstest.junit.JunitDescriptor
-import com.workday.plugin.omstest.junit.TestResultPresenter
-import com.workday.plugin.omstest.util.TestProcessHandler
-import com.workday.plugin.omstest.util.LastTestStorage
+import com.workday.plugin.omstest.ui.TestResultPresenter
+import com.workday.plugin.omstest.ui.UiContentDescriptor
+import com.workday.plugin.omstest.ui.UiProcessHandler
+import com.workday.plugin.omstest.execution.LastTestStorage
 
 /**
  * Utility object for running remote tests on a specified host.
@@ -47,7 +47,7 @@ object RemoteTestExecutor {
     ) {
 
         LastTestStorage.setRemote(host, fqTestName, jmxParams, runTabName)
-        val descriptor = JunitDescriptor.createDescriptor(project, runTabName)
+        val descriptor = UiContentDescriptor.Companion.createDescriptor(project, runTabName)
 
         val processHandler = descriptor.getMyProcessHandler()
         val consoleView = descriptor.getMyConsoleView()
@@ -99,7 +99,7 @@ object RemoteTestExecutor {
     private fun runRemoteCommand(
         command: String,
         console: ConsoleView,
-        processHandler: TestProcessHandler,
+        processHandler: UiProcessHandler,
         title: String
     ) {
         console.print("\n> $title\n", ConsoleViewContentType.SYSTEM_OUTPUT)

@@ -1,4 +1,4 @@
-package com.workday.plugin.omstest.util
+package com.workday.plugin.omstest.execution
 
 /**
  * Storage for the last executed test command and its label.

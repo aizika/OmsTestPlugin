@@ -1,4 +1,4 @@
-package com.workday.plugin.omstest.util
+package com.workday.plugin.omstest.ui
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys

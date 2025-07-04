@@ -1,4 +1,4 @@
-package com.workday.plugin.omstest.junit
+package com.workday.plugin.omstest.ui
 
 import com.intellij.execution.Executor
 import com.intellij.execution.Location
@@ -23,7 +23,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.workday.plugin.omstest.actions.ReRunLastTest
-import com.workday.plugin.omstest.util.TestProcessHandler
 import java.awt.BorderLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
@@ -54,20 +53,20 @@ import javax.swing.JPanel
  * @since Jun-2025
  */
 
-class JunitDescriptor(
+class UiContentDescriptor(
     consoleView: ConsoleView?,
-    processHandler: TestProcessHandler,
+    processHandler: UiProcessHandler,
     component: JComponent,
     displayName: String
 ) : RunContentDescriptor(consoleView, processHandler, component, displayName) {
 
     companion object {
-        fun createDescriptor(project: Project, runTabName: String): JunitDescriptor {
-            val processHandler = TestProcessHandler()
+        fun createDescriptor(project: Project, runTabName: String): UiContentDescriptor {
+            val processHandler = UiProcessHandler()
             val consoleView = createConsoleView(project, processHandler)
             val consolePanel = createJunitPanel(consoleView)
 
-            return JunitDescriptor(
+            return UiContentDescriptor(
                 consoleView,
                 processHandler,
                 consolePanel,
@@ -146,7 +145,7 @@ class JunitDescriptor(
 
     }
 
-    fun getMyProcessHandler(): TestProcessHandler = processHandler as TestProcessHandler
+    fun getMyProcessHandler(): UiProcessHandler = processHandler as UiProcessHandler
 
     fun getMyConsoleView(): ConsoleView = executionConsole as ConsoleView
 }

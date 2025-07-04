@@ -1,4 +1,4 @@
-package com.workday.plugin.omstest.util
+package com.workday.plugin.omstest.ui
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -13,7 +13,7 @@ import com.intellij.psi.util.PsiTreeUtil
  * @since Jun-2025
  */
 
-object VisibilityManager {
+object TargetVisibilityManager {
 
     fun isClassContext(e: AnActionEvent): Boolean {
         val selectedElement = e.getData(CommonDataKeys.PSI_ELEMENT)
