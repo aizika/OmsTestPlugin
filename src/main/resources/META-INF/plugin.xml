@@ -20,14 +20,6 @@
                            displayType="BALLOON"
                            isLogByDefault="true"
                            toolWindowId="Run"/>
-<!--        <codeInsight.lineMarkerProvider-->
-<!--                language="JAVA"-->
-<!--                implementationClass="com.workday.plugin.omstest.gutter.RemoteTestMethodGutterMarkerProvider"/>-->
-<!--        <codeInsight.lineMarkerProvider-->
-<!--                language="JAVA"-->
-<!--                implementationClass="com.workday.plugin.omstest.gutter.RemoteTestClassGutterMarkerProvider"/>-->
-<!--    </extensions>-->
-<!--    <extensions defaultExtensionNs="com.intellij">-->
         <runLineMarkerContributor
                 language="JAVA"
                 implementationClass="com.workday.plugin.omstest.junit.MyRunLineMarkerContributor"/>
@@ -112,6 +104,7 @@
         <action id="ReRunOmsTestAction"
                 class="com.workday.plugin.omstest.ReRunLastTest"
                 text="Re-Run OMS Test"
+                description="Re-Run OMS Test"
                 icon="AllIcons.Actions.Rerun"/>
     </actions>
 </idea-plugin>
