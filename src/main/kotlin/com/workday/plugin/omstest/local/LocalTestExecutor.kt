@@ -7,7 +7,7 @@ import com.intellij.execution.ui.RunContentManager
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.workday.plugin.omstest.junit.JunitTestPanel
-import com.workday.plugin.omstest.junit.MyDescriptor
+import com.workday.plugin.omstest.junit.JunitDescriptor
 import java.io.File
 
 /**
@@ -26,8 +26,8 @@ object LocalTestExecutor {
     ) {
         if (project == null) return
 
-        val myDescriptor = MyDescriptor.createDescriptor(project, runTabName)
-        val processHandler = myDescriptor.getMyProcessHandler()
+        val junitDescriptor = JunitDescriptor.createDescriptor(project, runTabName)
+        val processHandler = junitDescriptor.getMyProcessHandler()
 
         fun log(msg: String) {
             processHandler.pushOutput("$msg\n", ProcessOutputTypes.STDOUT)
@@ -39,7 +39,7 @@ object LocalTestExecutor {
         val xmlFile = File(path, "TEST-junit-jupiter.xml")
 
         RunContentManager.getInstance(project)
-            .showRunContent(getRunExecutorInstance(), myDescriptor)
+            .showRunContent(getRunExecutorInstance(), junitDescriptor)
 
         ApplicationManager.getApplication().executeOnPooledThread {
             try {

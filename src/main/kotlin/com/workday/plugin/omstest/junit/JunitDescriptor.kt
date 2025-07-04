@@ -1,6 +1,5 @@
 package com.workday.plugin.omstest.junit
 
-import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.openapi.actionSystem.ActionManager
@@ -12,21 +11,21 @@ import java.awt.BorderLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
 
-class MyDescriptor(
+class JunitDescriptor(
     consoleView: ConsoleView?,
-    processHandler: ProcessHandler?,
+    processHandler: JunitProcessHandler,
     component: JComponent,
     displayName: String
 ) : RunContentDescriptor(consoleView, processHandler, component, displayName) {
 
     companion object {
-        fun createDescriptor(project: Project, runTabName: String): MyDescriptor {
+        fun createDescriptor(project: Project, runTabName: String): JunitDescriptor {
             val processHandler = JunitProcessHandler()
             val consoleView = ParsedResultConsole().createConsoleView(project, processHandler)
 
             val consolePanel = createJunitPanel(consoleView, processHandler)
 
-            return MyDescriptor(
+            return JunitDescriptor(
                 consoleView,
                 processHandler,
                 consolePanel,
@@ -51,4 +50,6 @@ class MyDescriptor(
 
     }
     fun getMyProcessHandler(): JunitProcessHandler = processHandler as JunitProcessHandler
+    fun getMyConsoleView(): ConsoleView = executionConsole as ConsoleView
+    fun getJunitPanel(): JPanel = component as JPanel
 }
