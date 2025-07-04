@@ -8,7 +8,7 @@ import java.io.File
 private const val TEST_JUNIT_JUPITER_XML = "TEST-junit-jupiter.xml"
 
 /**
- *
+ * Utility class for displaying parsed JUnit test results in the IntelliJ test runner console.
  *
  * @author alexander.aizikivsky
  * @since Jun-2025
@@ -46,11 +46,6 @@ class TestResultPresenter {
 
 
     private fun displayTestSuiteResult(suite: TestSuiteResult, processHandler: ProcessHandler) {
-
-        processHandler.notifyTextAvailable(
-            "After suite started\n",
-            ProcessOutputTypes.STDOUT
-        )
         suite.results.groupBy { it.className }
             .forEach { (className, results) ->
                 val suiteName = className.substringAfterLast('.')

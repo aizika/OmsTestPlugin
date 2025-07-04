@@ -1,4 +1,4 @@
-package com.workday.plugin.omstest
+package com.workday.plugin.omstest.actions
 
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 

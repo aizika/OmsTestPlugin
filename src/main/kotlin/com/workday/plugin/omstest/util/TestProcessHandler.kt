@@ -20,17 +20,6 @@ class TestProcessHandler : ProcessHandler() {
         notifyProcessTerminated(0)
     }
 
-    /**
-     * Wrapper method to push output text to the console.
-     * Slightly more convenient than using notifyTextAvailable directly.
-     *
-     * @param text The text to output.
-     * @param outputType The type of output (e.g., STDOUT, STDERR).
-     */
-    fun pushOutput(text: String, outputType: Key<*>) {
-        notifyTextAvailable(text, outputType)
-    }
-
     // the methods below are required to implement ProcessHandler
     override fun destroyProcessImpl() {
         notifyProcessTerminated(0)

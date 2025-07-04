@@ -31,7 +31,7 @@ object LocalTestExecutor {
         processHandler.startNotify()
 
         fun log(msg: String) {
-            processHandler.pushOutput("$msg\n", ProcessOutputTypes.STDOUT)
+            processHandler.notifyTextAvailable("$msg\n", ProcessOutputTypes.STDOUT)
         }
 
 
@@ -54,7 +54,7 @@ object LocalTestExecutor {
 
                 process.inputStream.bufferedReader().useLines { lines ->
                     lines.forEach { line ->
-                        processHandler.pushOutput(line + "\n", ProcessOutputTypes.STDOUT)
+                        processHandler.notifyTextAvailable(line + "\n", ProcessOutputTypes.STDOUT)
                     }
                 }
 

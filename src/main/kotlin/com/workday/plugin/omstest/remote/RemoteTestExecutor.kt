@@ -76,7 +76,6 @@ object RemoteTestExecutor {
                 processHandler.finish()
             }
         }
-        println("[TEST-PANEL] Finished displayTestSuiteResult(...)")
     }
 
     private fun buildSshCommand(host: String, jmxInput: String): String = """
@@ -110,7 +109,7 @@ object RemoteTestExecutor {
                 .start()
 
             process.inputStream.bufferedReader().lines().forEach { line ->
-                processHandler.pushOutput(line + "\n", ProcessOutputTypes.STDOUT)
+                processHandler.notifyTextAvailable(line + "\n", ProcessOutputTypes.STDOUT)
             }
 
             val exitCode = process.waitFor()
