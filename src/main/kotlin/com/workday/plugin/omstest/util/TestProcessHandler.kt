@@ -1,7 +1,6 @@
 package com.workday.plugin.omstest.util
 
 import com.intellij.execution.process.ProcessHandler
-import com.intellij.openapi.util.Key
 import java.io.OutputStream
 
 /**
