@@ -1,8 +1,9 @@
-package com.workday.plugin.omstest.remote
+package com.workday.plugin.omstest.actions
 
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.workday.plugin.omstest.remote.RemoteTestExecutor
 import com.workday.plugin.omstest.util.TargetResolver
 import com.workday.plugin.omstest.util.VisibilityManager
 
@@ -13,12 +14,17 @@ import com.workday.plugin.omstest.util.VisibilityManager
  * @author alexander.aizikivsky
  * @since Jun-2025
  */
-class RunRemoteTestByMethod : AnAction() {
+class RunRemoteTestMethod : AnAction() {
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val target = TargetResolver.resolveMethodTarget(e) ?: return
-        RemoteTestExecutor.runRemoteTestMethod(project, target.fqName, target.runTabName)
+        RemoteTestExecutor.runRemoteTest(
+            project,
+            target.fqName,
+            """${target.fqName} empty empty empty OMSBI /usr/local/workday-oms/logs/junit""",
+            target.runTabName
+        )
     }
 
     override fun getActionUpdateThread(): ActionUpdateThread {

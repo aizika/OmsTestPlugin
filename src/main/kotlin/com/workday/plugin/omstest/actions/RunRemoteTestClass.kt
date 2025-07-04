@@ -1,8 +1,9 @@
-package com.workday.plugin.omstest.remote
+package com.workday.plugin.omstest.actions
 
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.workday.plugin.omstest.remote.RemoteTestExecutor
 import com.workday.plugin.omstest.util.TargetResolver
 import com.workday.plugin.omstest.util.VisibilityManager
 
@@ -13,13 +14,18 @@ import com.workday.plugin.omstest.util.VisibilityManager
  * @author alexander.aizikivsky
  * @since Jun-2025
  */
-class RunRemoteTestByClass : AnAction() {
+class RunRemoteTestClass : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
-        println("RunRemoteTestByClass triggered")  // or use Logger
+        println("RunRemoteTestClass triggered")  // or use Logger
 
         val project = e.project ?: return
         val target = TargetResolver.resolveClassTarget(e) ?: return
-        RemoteTestExecutor.runRemoteTestClass(project, target.fqName, target.category, target.runTabName)
+        RemoteTestExecutor.runRemoteTest(
+            project,
+            target.fqName,
+            """empty ${target.fqName} empty empty ${target.category} /usr/local/workday-oms/logs/junit""",
+            target.runTabName
+        )
     }
 
     override fun update(e: AnActionEvent) {

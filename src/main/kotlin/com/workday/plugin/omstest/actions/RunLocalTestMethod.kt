@@ -1,9 +1,10 @@
-package com.workday.plugin.omstest.local
+package com.workday.plugin.omstest.actions
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.workday.plugin.omstest.local.LocalTestExecutor
 import com.workday.plugin.omstest.util.JunitProcessHandler
 import com.workday.plugin.omstest.util.LastTestStorage
 import com.workday.plugin.omstest.util.TargetResolver
@@ -17,7 +18,7 @@ import java.io.File
  * @author alexander.aizikivsky
  * @since Jun-2025
  */
-class RunGradleTestByMethod : AnAction() {
+class RunLocalTestMethod : AnAction() {
     override fun actionPerformed(event: AnActionEvent) {
         val target = TargetResolver.resolveMethodTarget(event) ?: return
         val targetName = "-PtestMethod=${target.fqName}"

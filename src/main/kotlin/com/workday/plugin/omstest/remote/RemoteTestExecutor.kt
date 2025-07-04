@@ -32,30 +32,7 @@ import java.awt.BorderLayout
  */
 object RemoteTestExecutor {
 
-    fun runRemoteTestClass(
-        project: Project,
-        fqTestName: String,
-        category: String,
-        label: String
-    ) {
-        runRemoteTest(
-            project,
-            fqTestName,
-            """empty $fqTestName empty empty $category /usr/local/workday-oms/logs/junit""",
-            label
-        )
-    }
-
-    fun runRemoteTestMethod(project: Project, fqTestName: String, label: String) {
-        runRemoteTest(
-            project,
-            fqTestName,
-            """$fqTestName empty empty empty OMSBI /usr/local/workday-oms/logs/junit""",
-            label
-        )
-    }
-
-    private fun runRemoteTest(
+    fun runRemoteTest(
         project: Project,
         fqTestName: String,
         jmxParams: String,
