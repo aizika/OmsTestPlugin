@@ -1,13 +1,12 @@
 package com.workday.plugin.omstest
 
-import LocalProcessHandler
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.process.KillableProcessHandler
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
+import com.workday.plugin.omstest.local.LocalTestExecutor
 import com.workday.plugin.omstest.remote.RemoteTestExecutor.runTestWithHost
 import com.workday.plugin.omstest.util.LastTestStorage
 import java.io.File
@@ -36,11 +35,7 @@ class ReRunLastTest : AnAction() {
 
                 val cmdLine = GeneralCommandLine(commandParts)
                 cmdLine.workDirectory = File(project.basePath ?: ".")
-
-                val osHandler = KillableProcessHandler(cmdLine)
-                LocalProcessHandler(osHandler) // Wrap it
-
-//                LocalTestExecutor.runLocalCommand(project, runTabName, targetName, processHandler)
+                LocalTestExecutor.runLocalCommand(project, runTabName, targetName)
             }
 
             LastTestStorage.Environment.REMOTE -> {

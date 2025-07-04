@@ -5,7 +5,6 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.workday.plugin.omstest.local.LocalTestExecutor
-import com.workday.plugin.omstest.util.JunitProcessHandler
 import com.workday.plugin.omstest.util.LastTestStorage
 import com.workday.plugin.omstest.util.TargetResolver
 import com.workday.plugin.omstest.util.VisibilityManager
@@ -34,9 +33,7 @@ class RunLocalTestClass : AnAction() {
         val cmdLine = GeneralCommandLine(commandParts)
         cmdLine.workDirectory = File(event.project!!.basePath ?: ".")
 
-        val processHandler = JunitProcessHandler()
-        LocalTestExecutor.runLocalCommand(event.project, target.runTabName, targetName, processHandler)
-
+        LocalTestExecutor.runLocalCommand(event.project, target.runTabName, targetName)
     }
 
     /**
