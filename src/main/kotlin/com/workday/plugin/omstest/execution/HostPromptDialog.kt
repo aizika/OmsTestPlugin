@@ -1,7 +1,6 @@
 package com.workday.plugin.omstest.execution
 
 import com.intellij.openapi.ui.DialogWrapper
-import com.workday.plugin.omstest.execution.LastTestStorage
 import java.awt.BorderLayout
 import javax.swing.JComponent
 import javax.swing.JLabel

@@ -13,7 +13,6 @@ import com.intellij.openapi.project.Project
 import com.workday.plugin.omstest.ui.TestResultPresenter
 import com.workday.plugin.omstest.ui.UiContentDescriptor
 import com.workday.plugin.omstest.ui.UiProcessHandler
-import com.workday.plugin.omstest.execution.LastTestStorage
 
 /**
  * Utility object for running remote tests on a specified host.

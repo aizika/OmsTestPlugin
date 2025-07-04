@@ -5,11 +5,8 @@ import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.psi.PsiClass
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiIdentifier
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.util.PsiTreeUtil
-import com.intellij.psi.util.PsiUtil
 
 data class TestTarget(
     val fqName: String,
@@ -20,60 +17,22 @@ data class TestTarget(
 object ErrorHandlingContext {
     private val quietFlag = ThreadLocal.withInitial { false }
 
-    fun setQuiet() {
-        quietFlag.set(true)
-    }
-
     fun isQuiet(): Boolean = quietFlag.get()
 }
 
 object TargetResolver {
-    fun resolveMethodTargetQuietly(element: PsiElement): TestTarget? {
-        ErrorHandlingContext.setQuiet()
-        return resolveMethodTargetCommon(element)
-    }
 
-fun resolveMethodTarget(event: AnActionEvent): TestTarget? {
-    event.project ?: return null
-    val editor = event.getData(CommonDataKeys.EDITOR) ?: return null
-    val file = event.getData(CommonDataKeys.PSI_FILE) ?: return null
-    val offset = editor.caretModel.offset
+    fun resolveMethodTarget(event: AnActionEvent): TestTarget? {
+        event.project ?: return null
+        val editor = event.getData(CommonDataKeys.EDITOR) ?: return null
+        val file = event.getData(CommonDataKeys.PSI_FILE) ?: return null
+        val offset = editor.caretModel.offset
 
-    val element = file.findElementAt(offset) ?: return null
-    val method = PsiTreeUtil.getParentOfType(element, PsiMethod::class.java) ?: return null
-    val psiClass = method.containingClass ?: return null
+        val element = file.findElementAt(offset) ?: return null
+        val method = PsiTreeUtil.getParentOfType(element, PsiMethod::class.java) ?: return null
+        val psiClass = method.containingClass ?: return null
 
-    val fqMethodName = "${psiClass.qualifiedName}@${method.name}"
-    val category = TargetResolverUtil.getTestCategory(psiClass)
-        .takeIf { it.isNotEmpty() }
-        ?: return TargetResolverUtil.showError(psiClass.project, "Missing or malformed @Tag annotation.")
-
-    return TestTarget(
-        fqName = fqMethodName,
-        category,
-        runTabName = method.name
-    )
-}
-
-    private fun resolveMethodTargetCommon(element: PsiElement): TestTarget? {
-        val method = when (element) {
-            is PsiMethod -> element
-            is PsiIdentifier -> element.parent as? PsiMethod
-            else -> PsiTreeUtil.getParentOfType(element, PsiMethod::class.java)
-        } ?: return null
-
-        if (element != method.nameIdentifier) return null
-
-        // Optional: only annotate @Test methods
-        val isTestMethod = method.annotations.any {
-            it.qualifiedName == "org.junit.Test" || it.qualifiedName == "org.junit.jupiter.api.Test"
-        }
-        if (!isTestMethod) return null
-
-        val psiClass = PsiUtil.getTopLevelClass(method) ?: method.containingClass ?: return null
-        val qualifiedName = psiClass.qualifiedName ?: return null
-
-        val fqMethodName = "$qualifiedName@${method.name}"
+        val fqMethodName = "${psiClass.qualifiedName}@${method.name}"
         val category = TargetResolverUtil.getTestCategory(psiClass)
             .takeIf { it.isNotEmpty() }
             ?: return TargetResolverUtil.showError(psiClass.project, "Missing or malformed @Tag annotation.")
@@ -81,15 +40,8 @@ fun resolveMethodTarget(event: AnActionEvent): TestTarget? {
         return TestTarget(
             fqName = fqMethodName,
             category,
-            runTabName = psiClass.name ?: "UnnamedClass"
+            runTabName = method.name
         )
-    }
-
-
-    fun resolveClassTargetQuietly(psiElement: PsiElement): TestTarget? {
-        ErrorHandlingContext.setQuiet()
-        val psiClass = PsiTreeUtil.getParentOfType(psiElement, PsiClass::class.java) ?: return null
-        return resolveClassTargetCommon(psiClass)
     }
 
     fun resolveClassTarget(event: AnActionEvent): TestTarget? {
@@ -113,26 +65,9 @@ fun resolveMethodTarget(event: AnActionEvent): TestTarget? {
         )
     }
 
-    private fun resolveClassTargetCommon(psiClass: PsiClass): TestTarget? {
-        val qualifiedName = TargetResolverUtil.qualifiedNameOrError(psiClass) ?: return null
-
-        val category = TargetResolverUtil.getTestCategory(psiClass)
-            .takeIf { it.isNotEmpty() }
-            ?: return TargetResolverUtil.showError(psiClass.project, "Missing or malformed @Tag annotation.")
-
-        val label = psiClass.name ?: "Run Test"
-
-        return TestTarget(qualifiedName, category, label)
-    }
-
 }
 
 object TargetResolverUtil {
-
-    fun qualifiedNameOrError(psiClass: PsiClass): String? {
-        return psiClass.qualifiedName
-            ?: showError(psiClass.project, "Cannot determine qualified class name.")
-    }
 
     fun showError(project: Project, message: String): Nothing? {
         if (!ErrorHandlingContext.isQuiet()) {
