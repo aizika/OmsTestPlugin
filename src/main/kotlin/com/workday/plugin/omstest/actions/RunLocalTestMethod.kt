@@ -6,12 +6,12 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.workday.plugin.omstest.execution.LocalTestExecutor
 import com.workday.plugin.omstest.execution.LastTestStorage
-import com.workday.plugin.omstest.ui.TargetResolver
-import com.workday.plugin.omstest.ui.TargetVisibilityManager
+import com.workday.plugin.omstest.ui.TestTargetResolver
+import com.workday.plugin.omstest.ui.TestTargetResolver.isMethodContext
 import java.io.File
 
 /**
- * Action to run a Gradle test for the selected Java method in IntelliJ IDEA.
+ * Action to run a test for the selected Java test method in IntelliJ IDEA against the local OMS.
  * Identifies the method and its containing class at the caret position, then executes the test using Gradle.
  *
  * @author alexander.aizikivsky
@@ -19,7 +19,7 @@ import java.io.File
  */
 class RunLocalTestMethod : AnAction() {
     override fun actionPerformed(event: AnActionEvent) {
-        val target = TargetResolver.resolveMethodTarget(event) ?: return
+        val target = TestTargetResolver.resolveMethodTarget(event) ?: return
         val targetName = "-PtestMethod=${target.fqName}"
         val commandParts = listOf(
             "./gradlew",
@@ -28,15 +28,13 @@ class RunLocalTestMethod : AnAction() {
             "-s"
         )
         LastTestStorage.setLocal(target.runTabName, targetName)
-
         val cmdLine = GeneralCommandLine(commandParts)
         cmdLine.workDirectory = File(event.project!!.basePath ?: ".")
-
         LocalTestExecutor.runLocalCommand(event.project, target.runTabName, targetName)
     }
 
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = TargetVisibilityManager.isMethodContext(e)
+        e.presentation.isEnabledAndVisible = isMethodContext(e)
     }
 
     override fun getActionUpdateThread(): ActionUpdateThread {

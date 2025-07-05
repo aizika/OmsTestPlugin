@@ -6,12 +6,12 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.workday.plugin.omstest.execution.LocalTestExecutor
 import com.workday.plugin.omstest.execution.LastTestStorage
-import com.workday.plugin.omstest.ui.TargetResolver
-import com.workday.plugin.omstest.ui.TargetVisibilityManager
+import com.workday.plugin.omstest.ui.TestTargetResolver
+import com.workday.plugin.omstest.ui.TestTargetResolver.isClassContext
 import java.io.File
 
 /**
- * Action to run a Gradle test for the selected Java class in IntelliJ IDEA.
+ * Action to run a test for the selected Java class in IntelliJ IDEA against the local OMS.
  * Extracts the class name from the current file and executes the test using Gradle.
  *
  * @author alexander.aizikivsky
@@ -19,8 +19,7 @@ import java.io.File
  */
 class RunLocalTestClass : AnAction() {
     override fun actionPerformed(event: AnActionEvent) {
-        val target = TargetResolver.resolveClassTarget(event) ?: return
-
+        val target = TestTargetResolver.resolveClassTarget(event) ?: return
         val targetName = "-PtestClass=${target.fqName}"
         val commandParts = listOf(
             "./gradlew",
@@ -29,10 +28,8 @@ class RunLocalTestClass : AnAction() {
             "-s"
         )
         LastTestStorage.setLocal(target.runTabName, targetName)
-
         val cmdLine = GeneralCommandLine(commandParts)
         cmdLine.workDirectory = File(event.project!!.basePath ?: ".")
-
         LocalTestExecutor.runLocalCommand(event.project, target.runTabName, targetName)
     }
 
@@ -41,7 +38,7 @@ class RunLocalTestClass : AnAction() {
      * Enables the action if a Java class is found at the caret position.
      */
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = TargetVisibilityManager.isClassContext(e)
+        e.presentation.isEnabledAndVisible = isClassContext(e)
     }
 
     /**

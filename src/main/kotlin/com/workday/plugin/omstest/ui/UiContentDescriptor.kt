@@ -39,7 +39,7 @@ import javax.swing.JPanel
  *         |                                                                                      |
  *         |  +--------------------------------+  +----------------------------------------+      |
  *         |  |   Test Tree Panel              |  |        Console Output Panel            |      |
- *         |  |  [TestResultsViewer]           |  |  [ConsoleViewImpl inside SMTRunnerConsoleView]|
+ *         |  |  [TestResultsViewer]           |  |  [ConsoleView inside SMTRunnerConsoleView]    |
  *         |  |  - Based on SMTestProxy tree   |  |  - Receives process output, SM logs    |      |
  *         |  |  - Updates via SM events       |  |  - Printed system output, test logs    |      |
  *         |  +--------------------------------+  +----------------------------------------+      |
@@ -142,12 +142,11 @@ class UiContentDescriptor(
             override fun getConfigurationFactories(): Array<ConfigurationFactory> =
                 arrayOf(ParsedResultConfigFactory)
         }
-
     }
 
-    fun getMyProcessHandler(): UiProcessHandler = processHandler as UiProcessHandler
+    fun getUiProcessHandler(): UiProcessHandler = processHandler as UiProcessHandler
 
-    fun getMyConsoleView(): ConsoleView = executionConsole as ConsoleView
+    fun getConsoleView(): ConsoleView = executionConsole as ConsoleView
 }
 
 private object NoOpTestLocator : SMTestLocator {

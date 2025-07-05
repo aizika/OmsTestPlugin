@@ -32,12 +32,7 @@ class ReRunLastTest : AnAction() {
                     showMissingDialog(project)
                     return
                 }
-                val commandParts = listOf(
-                    "./gradlew",
-                    targetName,
-                    ":runTestJmx",
-                    "-s"
-                )
+                val commandParts = listOf("./gradlew", targetName, ":runTestJmx", "-s")
                 LastTestStorage.setLocal(runTabName, targetName)
 
                 val cmdLine = GeneralCommandLine(commandParts)

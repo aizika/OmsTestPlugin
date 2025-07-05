@@ -10,7 +10,8 @@ import com.intellij.psi.PsiIdentifier
 import com.intellij.psi.PsiMethod
 
 /**
- * Add OMS menu items to the popup menu when clicking on Intellij test icons in the gutter.
+ * Adds OMS menu items to the Intellij test popup menu.
+ * This menu pops up when a user clicks on Intellij test icons in the gutter.
  *
  * @author alexander.aizikivsky
  * @since Jun-2025

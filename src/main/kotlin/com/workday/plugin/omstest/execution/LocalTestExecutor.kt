@@ -27,7 +27,7 @@ object LocalTestExecutor {
         if (project == null) return
 
         val junitDescriptor = UiContentDescriptor.createDescriptor(project, runTabName)
-        val processHandler = junitDescriptor.getMyProcessHandler()
+        val processHandler = junitDescriptor.getUiProcessHandler()
         processHandler.startNotify()
 
         fun log(msg: String) {

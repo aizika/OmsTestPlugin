@@ -48,8 +48,8 @@ object RemoteTestExecutor {
         LastTestStorage.setRemote(host, fqTestName, jmxParams, runTabName)
         val descriptor = UiContentDescriptor.Companion.createDescriptor(project, runTabName)
 
-        val processHandler = descriptor.getMyProcessHandler()
-        val consoleView = descriptor.getMyConsoleView()
+        val processHandler = descriptor.getUiProcessHandler()
+        val consoleView = descriptor.getConsoleView()
         RunContentManager.getInstance(project)
             .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
 

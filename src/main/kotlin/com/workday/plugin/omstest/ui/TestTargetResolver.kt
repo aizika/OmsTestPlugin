@@ -8,19 +8,14 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.util.PsiTreeUtil
 
-data class TestTarget(
-    val fqName: String,
-    val category: String,
-    val runTabName: String
-)
-
-object ErrorHandlingContext {
-    private val quietFlag = ThreadLocal.withInitial { false }
-
-    fun isQuiet(): Boolean = quietFlag.get()
-}
-
-object TargetResolver {
+/**
+ * Utility object to resolve test targets in IntelliJ IDEA based on the current context.
+ * It can resolve targets for methods and classes, and checks if the context is suitable for running tests.
+ *
+ * @author alexander.aizikivsky
+ * @since Jun-2025
+ */
+object TestTargetResolver {
 
     fun resolveMethodTarget(event: AnActionEvent): TestTarget? {
         event.project ?: return null
@@ -33,9 +28,9 @@ object TargetResolver {
         val psiClass = method.containingClass ?: return null
 
         val fqMethodName = "${psiClass.qualifiedName}@${method.name}"
-        val category = TargetResolverUtil.getTestCategory(psiClass)
+        val category = getTestCategory(psiClass)
             .takeIf { it.isNotEmpty() }
-            ?: return TargetResolverUtil.showError(psiClass.project, "Missing or malformed @Tag annotation.")
+            ?: return showError(psiClass.project, "Missing or malformed @Tag annotation.")
 
         return TestTarget(
             fqName = fqMethodName,
@@ -54,9 +49,9 @@ object TargetResolver {
         val psiClass = PsiTreeUtil.getParentOfType(element, PsiClass::class.java) ?: return null
 
         val fqClassName = psiClass.qualifiedName ?: return null
-        val category = TargetResolverUtil.getTestCategory(psiClass)
+        val category = getTestCategory(psiClass)
             .takeIf { it.isNotEmpty() }
-            ?: return TargetResolverUtil.showError(psiClass.project, "Missing or malformed @Tag annotation.")
+            ?: return showError(psiClass.project, "Missing or malformed @Tag annotation.")
 
         return TestTarget(
             fqName = fqClassName,
@@ -65,9 +60,35 @@ object TargetResolver {
         )
     }
 
-}
+    fun isClassContext(e: AnActionEvent): Boolean {
+        val selectedElement = e.getData(CommonDataKeys.PSI_ELEMENT)
+        if (selectedElement is PsiClass) return true
 
-object TargetResolverUtil {
+        val psiFile = e.getData(CommonDataKeys.PSI_FILE)
+        val editor = e.getData(CommonDataKeys.EDITOR)
+        if (psiFile != null && editor != null) {
+            val offset = editor.caretModel.offset
+            val element = psiFile.findElementAt(offset)
+            if (PsiTreeUtil.getParentOfType(element, PsiClass::class.java) != null) return true
+        }
+
+        return false
+    }
+
+    fun isMethodContext(e: AnActionEvent): Boolean {
+        val selectedElement = e.getData(CommonDataKeys.PSI_ELEMENT)
+        if (selectedElement is PsiMethod) return true
+
+        val psiFile = e.getData(CommonDataKeys.PSI_FILE)
+        val editor = e.getData(CommonDataKeys.EDITOR)
+        if (psiFile != null && editor != null) {
+            val offset = editor.caretModel.offset
+            val element = psiFile.findElementAt(offset)
+            if (PsiTreeUtil.getParentOfType(element, PsiMethod::class.java) != null) return true
+        }
+
+        return false
+    }
 
     fun showError(project: Project, message: String): Nothing? {
         if (!ErrorHandlingContext.isQuiet()) {
@@ -86,4 +107,16 @@ object TargetResolverUtil {
             ?: ""
     }
 
+}
+
+data class TestTarget(
+    val fqName: String,
+    val category: String,
+    val runTabName: String
+)
+
+object ErrorHandlingContext {
+    private val quietFlag = ThreadLocal.withInitial { false }
+
+    fun isQuiet(): Boolean = quietFlag.get()
 }
