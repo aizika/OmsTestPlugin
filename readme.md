@@ -3,8 +3,10 @@
   Gradle Test Runner IntelliJ Plugin
 </h1>
 
-This plugin enhances IntelliJ IDEA with convenient right-click actions to run Gradle tests by method or class. It also includes a one-click option to re-run the last test.
-It was tested very lightly, so please use it at your own risk and report any issues you find.
+This plugin enhances IntelliJ IDEA with convenient actions to run Gradle tests by method or class. It also includes a one-click option to re-run the last test.
+Tests could be run against SUV or locally running OMS. 
+
+*It was tested very lightly, so please use it at your own risk and report any issues you find.*
 
 ---
 
@@ -20,12 +22,11 @@ Follow the installation instructions below to set it up in IntelliJ IDEA.
 ## ✨ Features
 
 * ✅ Context-aware Gradle test execution:
-
     * Run the current test **method**
     * Run the current test **class**
 * ✅ clickable icons in the IntelliJ gutter
 * ✅ Re-run the **last test** with one click or shortcut
-* ✅ Works in both the **editor** and **project view**
+* ✅ Works in the **editor**, **Project**, and **Structure** views
 * ✅ Outputs results to the **Run tool window**
 * ✅ Fully compatible with **IntelliJ Community Edition 2024.1+**
 
