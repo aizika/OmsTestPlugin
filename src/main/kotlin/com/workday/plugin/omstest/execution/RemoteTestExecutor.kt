@@ -10,9 +10,14 @@ import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.workday.plugin.omstest.PluginConstants
 import com.workday.plugin.omstest.ui.TestResultPresenter
 import com.workday.plugin.omstest.ui.UiContentDescriptor
 import com.workday.plugin.omstest.ui.UiProcessHandler
+import org.jetbrains.annotations.NonNls
+import org.jetbrains.annotations.SystemIndependent
+import java.nio.file.Files
+import kotlin.io.path.Path
 
 /**
  * Utility object for running remote tests on a specified host.
@@ -44,8 +49,15 @@ object RemoteTestExecutor {
         host: String,
         runTabName: String
     ) {
-
         LastTestStorage.setRemote(host, fqTestName, jmxParams, runTabName)
+
+        // Delete test result file if exists
+        val targetDir = project.basePath ?: "."
+        val fullPath = Path("$targetDir${PluginConstants.LOCAL_RESULTS_DIR}" + "/" + PluginConstants.TEST_RESULT_FILE_NAME)
+        if (Files.exists(fullPath)) {
+            Files.deleteIfExists(fullPath)
+        }
+
         val descriptor = UiContentDescriptor.Companion.createDescriptor(project, runTabName)
 
         val processHandler = descriptor.getUiProcessHandler()
@@ -61,7 +73,7 @@ object RemoteTestExecutor {
         """.trimIndent().replace("\n", "\\n")
 
         val sshCommand = buildSshCommand(host, jmxInput)
-        val scpCommand = buildScpCommand(project, host)
+        val scpCommand = buildScpCommand(project, host, targetDir)
 
         val notification = notifyUser(project)
 
@@ -83,8 +95,7 @@ object RemoteTestExecutor {
         echo -e \"$jmxInput\" | java -jar /usr/local/bin/jmxterm-1.0-SNAPSHOT-uber.jar"
     """.trimIndent()
 
-    private fun buildScpCommand(project: Project, host: String): String {
-        val targetDir = project.basePath ?: System.getProperty("user.home")
+    private fun buildScpCommand(project: Project, host: String, targetDir: @SystemIndependent @NonNls String): String {
         return "scp root@$host:/data/workdaydevqa/suv/suvots/logs/junit/* \"$targetDir\""
     }
 

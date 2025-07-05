@@ -6,9 +6,12 @@ import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.RunContentManager
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.workday.plugin.omstest.PluginConstants
 import com.workday.plugin.omstest.ui.TestResultPresenter
 import com.workday.plugin.omstest.ui.UiContentDescriptor
 import java.io.File
+import java.nio.file.Files
+import kotlin.io.path.Path
 
 /**
  * Utility object for running external commands and displaying their output in an IntelliJ IDEA console tab.
@@ -26,6 +29,14 @@ object LocalTestExecutor {
     ) {
         if (project == null) return
 
+        // Delete test result file if exists
+        val basePath = project.basePath ?: "."
+        val parent = "$basePath${PluginConstants.LOCAL_RESULTS_DIR}"
+        val fullPath = Path(parent + "/" + PluginConstants.TEST_RESULT_FILE_NAME)
+        if (Files.exists(fullPath)) {
+            Files.deleteIfExists(fullPath)
+        }
+
         val junitDescriptor = UiContentDescriptor.createDescriptor(project, runTabName)
         val processHandler = junitDescriptor.getUiProcessHandler()
         processHandler.startNotify()
@@ -34,10 +45,7 @@ object LocalTestExecutor {
             processHandler.notifyTextAvailable("$msg\n", ProcessOutputTypes.STDOUT)
         }
 
-
-        val basePath = project.basePath ?: "."
-        val path = "$basePath/build/test-results/legacy-xml"
-        val xmlFile = File(path, "TEST-junit-jupiter.xml")
+        val xmlFile = File(parent, PluginConstants.TEST_RESULT_FILE_NAME)
 
         RunContentManager.getInstance(project)
             .showRunContent(getRunExecutorInstance(), junitDescriptor)
@@ -69,13 +77,13 @@ object LocalTestExecutor {
                 if (xmlFile.exists()) {
                     log("XML file found, parsing test results")
                     ApplicationManager.getApplication().invokeLater {
-                        TestResultPresenter().displayParsedResults(processHandler, path) {
+                        TestResultPresenter().displayParsedResults(processHandler, parent) {
                             log("Test results displayed")
                             processHandler.finish()
                         }
                     }
                 } else {
-                    log("XML result file not found after timeout in $path")
+                    log("XML result file not found after timeout in $parent")
                     processHandler.finish()
                 }
 
