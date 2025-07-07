@@ -14,7 +14,6 @@ intellij {
     version.set("2024.1")
     type.set("IC") // Compatible with IntelliJ Community Edition
     plugins.set(listOf("java"))
-    sandboxDir.set("/Users/alexander.aizikivsky/code/oms/")
 }
 
 java {
