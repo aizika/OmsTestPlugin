@@ -73,7 +73,7 @@ object RemoteTestExecutor {
         """.trimIndent().replace("\n", "\\n")
 
         val sshCommand = buildSshCommand(host, jmxInput)
-        val scpCommand = buildScpCommand(project, host, targetDir)
+        val scpCommand = buildScpCommand(host, targetDir)
 
         val notification = notifyUser(project)
 
@@ -95,7 +95,7 @@ object RemoteTestExecutor {
         echo -e \"$jmxInput\" | java -jar /usr/local/bin/jmxterm-1.0-SNAPSHOT-uber.jar"
     """.trimIndent()
 
-    private fun buildScpCommand(project: Project, host: String, targetDir: @SystemIndependent @NonNls String): String {
+    private fun buildScpCommand(host: String, targetDir: @SystemIndependent @NonNls String): String {
         return "scp root@$host:/data/workdaydevqa/suv/suvots/logs/junit/* \"$targetDir\""
     }
 
