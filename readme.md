@@ -57,6 +57,10 @@ Tested with `@Tag(OmsTestCategory.OMSBI)`
 
 **Test method** is a method in a test class annotated with `@Test`, `@ParameterizedTest`, or `@RepeatedTest`.
 
+Running remote tests requires one of the **OmsTestCategories** as a mandatory parameter. The plugin takes the category from the class annotation.
+
+Running tests on packages is not supported. (Among other things to avoid the hassle of choosing the category 😉).
+
 ### Gutter Menu Integration
 
 The plugin extends IntelliJ’s **native gutter icons** for test classes and methods by adding custom OMS actions directly into the standard popup menu.
@@ -94,11 +98,6 @@ They appear when the context is appropriate (e.g., when a test class or method i
 You can re-run the last executed test with a single click or shortcut.
 Same rules apply to remote and local tests.
 
-
-### Resolving test category
-Running remote tests requires one of the **OmsTestCategories**. The plugin takes the category from the class annotation.
-
-Running tests on packages is not supported. (Among other things to avoid the hassle of choosing the category 😉).
 
 ### 🔁 Re-Run Last Test
 
