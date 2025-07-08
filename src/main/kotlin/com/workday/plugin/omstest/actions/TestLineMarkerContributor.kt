@@ -14,6 +14,8 @@ import com.workday.plugin.omstest.execution.LastTestStorage
 import com.workday.plugin.omstest.execution.LocalTestExecutor
 import com.workday.plugin.omstest.execution.RemoteTestExecutor
 import com.workday.plugin.omstest.ui.TestTargetResolver.getTestCategory
+import com.workday.plugin.omstest.ui.TestTargetResolver.isOmsTestClass
+import com.workday.plugin.omstest.ui.TestTargetResolver.isOmsTestMethod
 import java.io.File
 
 /**
@@ -33,12 +35,14 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
 
         return when (parent) {
             is PsiMethod -> {
+                if (!isOmsTestMethod(parent)) return null
                 val clazz = parent.containingClass ?: return null
-                val category = getTestCategory(clazz)
+                if (!isOmsTestClass(clazz)) return null
 
+                val category = getTestCategory(clazz)
                 val methodName = "${clazz.qualifiedName}@${parent.name}"
 
-                val runLocal = object : AnAction("Run Local: ${parent.name}") {
+                val runLocal = object : AnAction("Run Local: ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
                     override fun actionPerformed(e: AnActionEvent) {
                         val param = "-PtestMethod=$methodName"
                         LastTestStorage.setLocal(methodName, param)
@@ -54,8 +58,7 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
                     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
                 }
 
-                val runRemote = object : AnAction("Run Remote: ${parent.name}") {
-
+                val runRemote = object : AnAction("Run Remote: ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
                     override fun actionPerformed(e: AnActionEvent) {
                         RemoteTestExecutor.runRemoteTest(
                             project,
@@ -63,7 +66,6 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
                             """${methodName} empty empty empty ${category} /usr/local/workday-oms/logs/junit""",
                             parent.name
                         )
-
                     }
 
                     override fun update(e: AnActionEvent) {
@@ -81,10 +83,11 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
             }
 
             is PsiClass -> {
+                if (!isOmsTestClass(parent)) return null
                 val fqName = parent.qualifiedName ?: return null
                 val category = getTestCategory(parent)
 
-                val runLocal = object : AnAction("Run Local (Class): ${parent.name}") {
+                val runLocal = object : AnAction("Run Local (Class): ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
                     override fun actionPerformed(e: AnActionEvent) {
                         val param = "-PtestClass=$fqName"
                         LastTestStorage.setLocal(fqName, param)
@@ -100,15 +103,14 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
                     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
                 }
 
-                val runRemote = object : AnAction("Run Remote (Class): ${parent.name}") {
+                val runRemote = object : AnAction("Run Remote (Class): ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
                     override fun actionPerformed(e: AnActionEvent) {
-//                        RemoteTestExecutor.runRemoteTest(e.project, fqName, )
                         RemoteTestExecutor.runRemoteTest(
                             project,
                             fqName,
                             """empty ${fqName} empty empty ${category} /usr/local/workday-oms/logs/junit""",
-                            parent.name!!)
-
+                            parent.name!!
+                        )
                     }
 
                     override fun update(e: AnActionEvent) {

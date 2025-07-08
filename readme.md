@@ -49,7 +49,13 @@ build/distributions/
 ---
 
 ## Running Tests
+
+### Context-Aware Test Execution
 #### ⚠️ All the actions depend on the context of the current file or selection. Re-Run Last Test is the only exception.
+**Test class** from the plugin perspective is a class annotated with `@Tag(OmsTestCategory)` except for `@Tag(OmsTestCategory.UNIT)`.
+Tested with `@Tag(OmsTestCategory.OMSBI)`
+
+**Test method** is a method in a test class annotated with `@Test`, `@ParameterizedTest`, or `@RepeatedTest`.
 
 ### Gutter Menu Integration
 

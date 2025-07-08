@@ -26,6 +26,12 @@ object TestTargetResolver {
         val element = file.findElementAt(offset) ?: return null
         val method = PsiTreeUtil.getParentOfType(element, PsiMethod::class.java) ?: return null
         val psiClass = method.containingClass ?: return null
+        if (!isOmsTestClass(psiClass)) {
+            return showError(psiClass.project, "Selected class is not an OMS test class.")
+        }
+        if (!isOmsTestMethod(method)) {
+            return showError(psiClass.project, "Selected method is not a test method.")
+        }
 
         val fqMethodName = "${psiClass.qualifiedName}@${method.name}"
         val category = getTestCategory(psiClass)
@@ -47,6 +53,9 @@ object TestTargetResolver {
 
         val element = file.findElementAt(offset) ?: return null
         val psiClass = PsiTreeUtil.getParentOfType(element, PsiClass::class.java) ?: return null
+        if (!isOmsTestClass(psiClass)) {
+            return showError(psiClass.project, "Selected class is not an OMS test class.")
+        }
 
         val fqClassName = psiClass.qualifiedName ?: return null
         val category = getTestCategory(psiClass)
@@ -105,6 +114,25 @@ object TestTargetResolver {
             ?.removeSurrounding("\"")
             ?.substringAfterLast('.')
             ?: ""
+    }
+
+    fun isOmsTestClass(clazz: PsiClass): Boolean {
+        return clazz.annotations.any {
+            it.qualifiedName == "org.junit.jupiter.api.Tag" &&
+                    it.parameterList.attributes.any { attr ->
+                        attr.text.contains("OmsTestCategories.")
+                    }
+        }
+    }
+
+    fun isOmsTestMethod(method: PsiMethod): Boolean {
+        return method.annotations.any {
+            it.qualifiedName in setOf(
+                "org.junit.jupiter.api.Test",
+                "org.junit.jupiter.api.RepeatedTest",
+                "org.junit.jupiter.params.ParameterizedTest"
+            )
+        }
     }
 
 }
