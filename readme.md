@@ -55,7 +55,7 @@ build/distributions/
 **Test class** from the plugin perspective is a class annotated with `@Tag(OmsTestCategory)` except for `@Tag(OmsTestCategory.UNIT)`.
 Tested with `@Tag(OmsTestCategory.OMSBI)`
 
-**Test method** is a method in a test class annotated with `@Test`, `@ParameterizedTest`, or `@RepeatedTest`.
+**Test method** is a method in a test class annotated with `@Test` or `@RepeatedTest`.
 
 Running remote tests requires one of the **OmsTestCategories** as a mandatory parameter. The plugin takes the category from the class annotation.
 
