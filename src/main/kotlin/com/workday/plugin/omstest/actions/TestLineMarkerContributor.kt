@@ -30,10 +30,11 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
     private val logger = com.intellij.openapi.diagnostic.Logger.getInstance(TestLineMarkerContributor::class.java)
 
     override fun getInfo(element: PsiElement): Info? {
-        logger.info("getInfo called for element: ${element::class.simpleName} - ${element.text}")
+        val elementText = element.text.take(200)
+        logger.info("GetInfo Called For: ${element::class.simpleName} – \"$elementText\"")
 
         if (element !is PsiIdentifier) {
-            logger.debug("Element is not PsiIdentifier: ${element::class.simpleName}")
+            logger.debug("Element Is Not PsiIdentifier: ${element::class.simpleName}")
             return null
         }
 
@@ -42,74 +43,77 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
 
         return when (parent) {
             is PsiMethod -> {
-                logger.debug("PsiIdentifier parent is method: ${parent.name}")
+                logger.debug("Parent Is PsiMethod: ${parent.name}")
                 if (!isOmsTestMethod(parent)) {
-                    logger.debug("Method ${parent.name} is not a valid OMS test method")
+                    logger.debug("Method ${parent.name} Is Not A Valid OMS Test Method")
                     return null
                 }
 
                 val clazz = parent.containingClass ?: run {
-                    logger.debug("Method ${parent.name} has no containing class")
+                    logger.debug("Method ${parent.name} Has No Containing Class")
                     return null
                 }
 
                 if (!isOmsTestClass(clazz)) {
-                    logger.debug("Class ${clazz.qualifiedName} is not a valid OMS test class")
+                    logger.debug("Class ${clazz.qualifiedName} Is Not A Valid OMS Test Class")
                     return null
                 }
 
                 val category = getTestCategory(clazz)
                 val methodName = "${clazz.qualifiedName}@${parent.name}"
-                logger.debug("Creating actions for test method: $methodName")
+                logger.info("✔ Found OMS Test Method: $methodName")
 
-                val runLocal = object : AnAction("Run Local: ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
-                    override fun actionPerformed(e: AnActionEvent) {
-                        val param = "-PtestMethod=$methodName"
-                        LastTestStorage.setLocal(methodName, param)
-                        val cmd = GeneralCommandLine(listOf("./gradlew", param, ":runTestJmx", "-s"))
-                        cmd.workDirectory = File(e.project?.basePath ?: ".")
-                        LocalTestExecutor.runLocalCommand(e.project, parent.name, param)
+                val runLocal =
+                    object : AnAction("Run Local: ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
+                        override fun actionPerformed(e: AnActionEvent) {
+                            val param = "-PtestMethod=$methodName"
+                            LastTestStorage.setLocal(methodName, param)
+                            val cmd = GeneralCommandLine(listOf("./gradlew", param, ":runTestJmx", "-s"))
+                            cmd.workDirectory = File(e.project?.basePath ?: ".")
+                            LocalTestExecutor.runLocalCommand(e.project, parent.name, param)
+                        }
+
+                        override fun update(e: AnActionEvent) {
+                            e.presentation.isEnabledAndVisible = true
+                        }
+
+                        override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
                     }
 
-                    override fun update(e: AnActionEvent) {
-                        e.presentation.isEnabledAndVisible = true
+                val runRemote =
+                    object : AnAction("Run Remote: ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
+                        override fun actionPerformed(e: AnActionEvent) {
+                            RemoteTestExecutor.runRemoteTest(
+                                project,
+                                methodName,
+                                """${methodName} empty empty empty ${category} /usr/local/workday-oms/logs/junit""",
+                                parent.name
+                            )
+                        }
+
+                        override fun update(e: AnActionEvent) {
+                            e.presentation.isEnabledAndVisible = true
+                        }
+
+                        override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
                     }
 
-                    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
-                }
-
-                val runRemote = object : AnAction("Run Remote: ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
-                    override fun actionPerformed(e: AnActionEvent) {
-                        RemoteTestExecutor.runRemoteTest(
-                            project,
-                            methodName,
-                            """${methodName} empty empty empty ${category} /usr/local/workday-oms/logs/junit""",
-                            parent.name
-                        )
-                    }
-
-                    override fun update(e: AnActionEvent) {
-                        e.presentation.isEnabledAndVisible = true
-                    }
-
-                    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
-                }
-
-                logger.debug("Returning Info with actions for method $methodName")
-                Info(AllIcons.RunConfigurations.TestState.Run, { "Run OMS test method" }, runLocal, runRemote)
+                Info(AllIcons.RunConfigurations.TestState.Run, { "Run OMS Test Method" }, runLocal, runRemote)
             }
 
             is PsiClass -> {
-                logger.debug("PsiIdentifier parent is class: ${parent.qualifiedName}")
+                logger.debug("Parent Is PsiClass: ${parent.qualifiedName}")
                 if (!isOmsTestClass(parent)) {
-                    logger.debug("Class ${parent.qualifiedName} is not a valid OMS test class")
+                    logger.debug("Class ${parent.qualifiedName} Is Not A Valid OMS Test Class")
                     return null
                 }
 
                 val fqName = parent.qualifiedName ?: return null
                 val category = getTestCategory(parent)
+                logger.info("✔ Found OMS Test Class: $fqName")
 
-                val runLocal = object : AnAction("Run Local (Class): ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
+                val runLocal = object :
+                    AnAction("Run Local (Class): ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
                     override fun actionPerformed(e: AnActionEvent) {
                         val param = "-PtestClass=$fqName"
                         LastTestStorage.setLocal(fqName, param)
@@ -125,7 +129,8 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
                     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
                 }
 
-                val runRemote = object : AnAction("Run Remote (Class): ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
+                val runRemote = object :
+                    AnAction("Run Remote (Class): ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
                     override fun actionPerformed(e: AnActionEvent) {
                         RemoteTestExecutor.runRemoteTest(
                             project,
@@ -142,12 +147,11 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
                     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
                 }
 
-                logger.debug("Returning Info with actions for class $fqName")
-                Info(AllIcons.RunConfigurations.TestState.Run, { "Run OMS test class" }, runLocal, runRemote)
+                Info(AllIcons.RunConfigurations.TestState.Run, { "Run OMS Test Class" }, runLocal, runRemote)
             }
 
             else -> {
-                logger.debug("Element parent is neither method nor class: ${parent::class.simpleName}")
+                logger.debug("Element Parent Is Neither Method Nor Class: ${parent::class.simpleName}")
                 null
             }
         }
