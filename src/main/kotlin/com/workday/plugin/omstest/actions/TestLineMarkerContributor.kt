@@ -27,20 +27,40 @@ import java.io.File
  */
 class TestLineMarkerContributor : RunLineMarkerContributor() {
 
+    private val logger = com.intellij.openapi.diagnostic.Logger.getInstance(TestLineMarkerContributor::class.java)
+
     override fun getInfo(element: PsiElement): Info? {
-        if (element !is PsiIdentifier) return null
+        logger.info("getInfo called for element: ${element::class.simpleName} - ${element.text}")
+
+        if (element !is PsiIdentifier) {
+            logger.debug("Element is not PsiIdentifier: ${element::class.simpleName}")
+            return null
+        }
 
         val parent = element.parent
         val project = element.project
 
         return when (parent) {
             is PsiMethod -> {
-                if (!isOmsTestMethod(parent)) return null
-                val clazz = parent.containingClass ?: return null
-                if (!isOmsTestClass(clazz)) return null
+                logger.debug("PsiIdentifier parent is method: ${parent.name}")
+                if (!isOmsTestMethod(parent)) {
+                    logger.debug("Method ${parent.name} is not a valid OMS test method")
+                    return null
+                }
+
+                val clazz = parent.containingClass ?: run {
+                    logger.debug("Method ${parent.name} has no containing class")
+                    return null
+                }
+
+                if (!isOmsTestClass(clazz)) {
+                    logger.debug("Class ${clazz.qualifiedName} is not a valid OMS test class")
+                    return null
+                }
 
                 val category = getTestCategory(clazz)
                 val methodName = "${clazz.qualifiedName}@${parent.name}"
+                logger.debug("Creating actions for test method: $methodName")
 
                 val runLocal = object : AnAction("Run Local: ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
                     override fun actionPerformed(e: AnActionEvent) {
@@ -75,15 +95,17 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
                     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
                 }
 
-                Info(
-                    AllIcons.RunConfigurations.TestState.Run,
-                    { "Run OMS test method" },
-                    runLocal, runRemote
-                )
+                logger.debug("Returning Info with actions for method $methodName")
+                Info(AllIcons.RunConfigurations.TestState.Run, { "Run OMS test method" }, runLocal, runRemote)
             }
 
             is PsiClass -> {
-                if (!isOmsTestClass(parent)) return null
+                logger.debug("PsiIdentifier parent is class: ${parent.qualifiedName}")
+                if (!isOmsTestClass(parent)) {
+                    logger.debug("Class ${parent.qualifiedName} is not a valid OMS test class")
+                    return null
+                }
+
                 val fqName = parent.qualifiedName ?: return null
                 val category = getTestCategory(parent)
 
@@ -120,14 +142,14 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
                     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
                 }
 
-                Info(
-                    AllIcons.RunConfigurations.TestState.Run,
-                    { "Run OMS test class" },
-                    runLocal, runRemote
-                )
+                logger.debug("Returning Info with actions for class $fqName")
+                Info(AllIcons.RunConfigurations.TestState.Run, { "Run OMS test class" }, runLocal, runRemote)
             }
 
-            else -> null
+            else -> {
+                logger.debug("Element parent is neither method nor class: ${parent::class.simpleName}")
+                null
+            }
         }
     }
 }
