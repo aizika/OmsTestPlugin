@@ -71,14 +71,15 @@ class TestResultPresenter {
                 .replace("]", "|]")
 
         for ((_, result) in results) {
+            val escapedName = escapeTc(result.name)
             processHandler.notifyTextAvailable(
-                "##teamcity[testStarted name='${result.name}']\n",
+                "##teamcity[testStarted name='$escapedName']\n",
                 ProcessOutputTypes.STDOUT
             )
 
             when (result.status) {
                 Status.FAILED -> processHandler.notifyTextAvailable(
-                    "##teamcity[testFailed name='${result.name}' message='${escapeTc(result.failureMessage ?: "Failed")}' details='${
+                    "##teamcity[testFailed name='$escapedName' message='${escapeTc(result.failureMessage ?: "Failed")}' details='${
                         escapeTc(
                             result.failureDetails ?: ""
                         )
@@ -87,7 +88,7 @@ class TestResultPresenter {
                 )
 
                 Status.ERROR -> processHandler.notifyTextAvailable(
-                    "##teamcity[testFailed name='${result.name}' message='${escapeTc(result.errorMessage ?: "Error")}' details='${
+                    "##teamcity[testFailed name='$escapedName' message='${escapeTc(result.errorMessage ?: "Error")}' details='${
                         escapeTc(
                             result.errorDetails ?: ""
                         )
@@ -96,14 +97,14 @@ class TestResultPresenter {
                 )
 
                 Status.SKIPPED -> processHandler.notifyTextAvailable(
-                    "##teamcity[testIgnored name='${result.name}' message='${escapeTc(result.skippedMessage ?: "Skipped")}']\n",
+                    "##teamcity[testIgnored name='$escapedName' message='${escapeTc(result.skippedMessage ?: "Skipped")}']\n",
                     ProcessOutputTypes.STDOUT
                 )
 
                 else -> {}
             }
             processHandler.notifyTextAvailable(
-                "##teamcity[testFinished name='${result.name}' duration='${result.timeInMillisStr}']\n",
+                "##teamcity[testFinished name='$escapedName' duration='${result.timeInMillisStr}']\n",
                 ProcessOutputTypes.STDOUT
             )
         }
