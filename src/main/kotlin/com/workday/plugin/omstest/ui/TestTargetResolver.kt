@@ -129,7 +129,8 @@ object TestTargetResolver {
         return method.annotations.any {
             it.qualifiedName in setOf(
                 "org.junit.jupiter.api.Test",
-                "org.junit.jupiter.api.RepeatedTest"
+                "org.junit.jupiter.api.RepeatedTest",
+                "org.junit.jupiter.params.ParameterizedTest"
             )
         }
     }

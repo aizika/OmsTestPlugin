@@ -90,9 +90,10 @@ object RemoteTestExecutor {
     }
 
     private fun buildSshCommand(host: String, jmxInput: String): String = """
-        ssh -o StrictHostKeyChecking=accept-new root@$host \
+        ssh -o StrictHostKeyChecking=accept-new root@$host <<ENDSSH\
         "docker exec ots-17-17 mkdir -p /usr/local/workday-oms/logs/junit && \
-        echo -e \"$jmxInput\" | java -jar /usr/local/bin/jmxterm-1.0-SNAPSHOT-uber.jar"
+        echo -e \"$jmxInput\ \
+        ENDSSH" | java -jar /usr/local/bin/jmxterm-1.0-SNAPSHOT-uber.jar"
     """.trimIndent()
 
     private fun buildScpCommand(host: String, targetDir: @SystemIndependent @NonNls String): String {

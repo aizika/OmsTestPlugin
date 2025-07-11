@@ -61,12 +61,14 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
 
                 val category = getTestCategory(clazz)
                 val methodName = "${clazz.qualifiedName}@${parent.name}"
+
+                val methodSignature = "'${clazz.qualifiedName}@${parent.name}(${parent.parameterList.parameters.joinToString(",") { it.type.canonicalText }})'"
                 logger.info("✔ Found OMS Test Method: $methodName")
 
                 val runLocal =
                     object : AnAction("Run Local: ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
                         override fun actionPerformed(e: AnActionEvent) {
-                            val param = "-PtestMethod=$methodName"
+                            val param = "-PtestMethod='$methodSignature'"
                             LastTestStorage.setLocal(methodName, param)
                             val cmd = GeneralCommandLine(listOf("./gradlew", param, ":runTestJmx", "-s"))
                             cmd.workDirectory = File(e.project?.basePath ?: ".")
@@ -86,7 +88,7 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
                             RemoteTestExecutor.runRemoteTest(
                                 project,
                                 methodName,
-                                """${methodName} empty empty empty ${category} /usr/local/workday-oms/logs/junit""",
+                                """${methodSignature} empty empty empty ${category} /usr/local/workday-oms/logs/junit""",
                                 parent.name
                             )
                         }
