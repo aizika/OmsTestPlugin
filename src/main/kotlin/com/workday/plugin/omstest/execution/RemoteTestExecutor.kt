@@ -53,10 +53,11 @@ object RemoteTestExecutor {
 
         // Delete test result file if exists
         val targetDir = project.basePath ?: "."
-        val fullPath = Path("$targetDir${PluginConstants.LOCAL_RESULTS_DIR}" + "/" + PluginConstants.TEST_RESULT_FILE_NAME)
-        if (Files.exists(fullPath)) {
-            Files.deleteIfExists(fullPath)
-        }
+        val fullPathLocal =
+            Path("$targetDir${PluginConstants.LOCAL_RESULTS_DIR}" + "/" + PluginConstants.TEST_RESULT_FILE_NAME)
+        val fullPathRemote = Path(targetDir + "/" + PluginConstants.TEST_RESULT_FILE_NAME)
+        Files.deleteIfExists(fullPathLocal)
+        Files.deleteIfExists(fullPathRemote)
 
         val descriptor = UiContentDescriptor.Companion.createDescriptor(project, runTabName)
 
@@ -65,14 +66,18 @@ object RemoteTestExecutor {
         RunContentManager.getInstance(project)
             .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor)
 
-        val jmxInput = """
-            open localhost:12016
-            domain com.workday.oms
-            bean name=JunitTestListener
-            run executeTestSuite $jmxParams
-        """.trimIndent().replace("\n", "\\n")
+        val sshCommand = """
+                ssh -o StrictHostKeyChecking=accept-new root@$host <<'ENDSSH'
+                docker exec ots-17-17 mkdir -p /usr/local/workday-oms/logs/junit
+                java -jar /usr/local/bin/jmxterm-1.0-SNAPSHOT-uber.jar <<'JMX'
+                open localhost:12016
+                domain com.workday.oms
+                bean name=JunitTestListener
+                run executeTestSuite $jmxParams
+                JMX
+                ENDSSH
+            """.trimIndent()
 
-        val sshCommand = buildSshCommand(host, jmxInput)
         val scpCommand = buildScpCommand(host, targetDir)
 
         val notification = notifyUser(project)
@@ -88,13 +93,6 @@ object RemoteTestExecutor {
             }
         }
     }
-
-    private fun buildSshCommand(host: String, jmxInput: String): String = """
-        ssh -o StrictHostKeyChecking=accept-new root@$host <<ENDSSH\
-        "docker exec ots-17-17 mkdir -p /usr/local/workday-oms/logs/junit && \
-        echo -e \"$jmxInput\ \
-        ENDSSH" | java -jar /usr/local/bin/jmxterm-1.0-SNAPSHOT-uber.jar"
-    """.trimIndent()
 
     private fun buildScpCommand(host: String, targetDir: @SystemIndependent @NonNls String): String {
         return "scp root@$host:/data/workdaydevqa/suv/suvots/logs/junit/* \"$targetDir\""

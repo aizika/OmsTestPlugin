@@ -62,8 +62,8 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
                 val category = getTestCategory(clazz)
                 val methodName = "${clazz.qualifiedName}@${parent.name}"
 
-                val methodSignature = "'${clazz.qualifiedName}@${parent.name}(${parent.parameterList.parameters.joinToString(",") { it.type.canonicalText }})'"
-                logger.info("✔ Found OMS Test Method: $methodName")
+                val methodSignature = buildMethodSignature(clazz.qualifiedName!!, parent)
+                logger.info("✔ Found OMS Test Method: $methodName, signature: $methodSignature, category: $category")
 
                 val runLocal =
                     object : AnAction("Run Local: ${parent.name}", null, AllIcons.RunConfigurations.TestState.Run) {
@@ -156,6 +156,16 @@ class TestLineMarkerContributor : RunLineMarkerContributor() {
                 logger.debug("Element Parent Is Neither Method Nor Class: ${parent::class.simpleName}")
                 null
             }
+        }
+    }
+    fun buildMethodSignature(classFqName: String, method: PsiMethod): String {
+        val paramTypes = method.parameterList.parameters
+            .joinToString(",") { it.type.canonicalText }
+
+        return if (paramTypes.isBlank()) {
+            "$classFqName@${method.name}"
+        } else {
+            "$classFqName@${method.name}\\($paramTypes\\)"
         }
     }
 }
