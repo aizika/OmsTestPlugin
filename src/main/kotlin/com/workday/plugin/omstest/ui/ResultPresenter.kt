@@ -70,10 +70,13 @@ class TestResultPresenter {
                 .replace("[", "|[")
                 .replace("]", "|]")
 
-        for ((_, result) in results) {
+        val sortedEntries = results.toSortedMap()
+        for ((_, result) in sortedEntries) {
             val escapedName = escapeTc(result.name)
+            val strippedBracketsName = result.name.replace(Regex("\\(.*?\\)|\\[.*?\\]"), "")
+            val location = "java:${result.className}#$strippedBracketsName"
             processHandler.notifyTextAvailable(
-                "##teamcity[testStarted name='$escapedName']\n",
+                "##teamcity[testStarted name='$escapedName' captureStandardOutput='true' locationHint='$location']\n",
                 ProcessOutputTypes.STDOUT
             )
 

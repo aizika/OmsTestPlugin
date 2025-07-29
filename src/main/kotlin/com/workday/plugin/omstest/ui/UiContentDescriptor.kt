@@ -12,6 +12,7 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.testframework.sm.SMTestRunnerConnectionUtil
 import com.intellij.execution.testframework.sm.runner.SMTRunnerConsoleProperties
+import com.intellij.execution.testframework.sm.runner.SMTRunnerNodeDescriptor
 import com.intellij.execution.testframework.sm.runner.SMTestLocator
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.RunContentDescriptor
@@ -20,15 +21,19 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
+import com.intellij.pom.Navigatable
+import com.intellij.psi.JavaPsiFacade
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.util.ui.UIUtil
 import com.workday.plugin.omstest.actions.ReRunLastTest
 import java.awt.BorderLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
+import javax.swing.tree.DefaultMutableTreeNode
 
 /**
- * This class represents a UI content descriptor for JUnit test results in Run Tool Window.
+ * This class represents a UI content descriptor for JUnit test results in the Run Tool Window.
  *
  *         +--------------------------------------------------------------------------------------+
  *         |                       Run Tool Window Tab ("OMS Test Results")                       |
@@ -64,6 +69,7 @@ class UiContentDescriptor(
         fun createDescriptor(project: Project, runTabName: String): UiContentDescriptor {
             val processHandler = UiProcessHandler()
             val consoleView = createConsoleView(project, processHandler)
+            installTestTreeNavigation(consoleView, project)
             val consolePanel = createJunitPanel(consoleView)
 
             return UiContentDescriptor(
@@ -81,12 +87,46 @@ class UiContentDescriptor(
                 "ParsedResults",
                 DefaultRunExecutor.getRunExecutorInstance()
             ) {
-                override fun getTestLocator(): SMTestLocator = NoOpTestLocator
+                override fun getTestLocator(): SMTestLocator = ParsedResultTestLocator
             }
+
+            println("TestLocator: ${consoleProperties.testLocator}")
 
             val view = SMTestRunnerConnectionUtil.createConsole("ParsedResults", consoleProperties)
             view.attachToProcess(handler)
             return view
+        }
+
+        private fun installTestTreeNavigation(consoleView: ConsoleView, project: Project) {
+            val tree = UIUtil.findComponentOfType(consoleView.component, javax.swing.JTree::class.java) ?: return
+
+            tree.addTreeSelectionListener { event ->
+                val selectedNode =
+                    event.path?.lastPathComponent as? DefaultMutableTreeNode ?: return@addTreeSelectionListener
+                val descriptor = selectedNode.userObject as? SMTRunnerNodeDescriptor ?: return@addTreeSelectionListener
+                val proxy = descriptor.element ?: return@addTreeSelectionListener
+
+                val locationUrl = proxy.locationUrl ?: return@addTreeSelectionListener
+                if (!locationUrl.startsWith("java:")) return@addTreeSelectionListener
+
+                val path = locationUrl.removePrefix("java:")
+                val (classFqName, methodName) = path.split("#").let {
+                    it[0] to it.getOrNull(1)
+                }
+
+                val psiFacade = JavaPsiFacade.getInstance(project)
+                val psiClass = psiFacade.findClass(classFqName, GlobalSearchScope.allScope(project))
+                    ?: return@addTreeSelectionListener
+
+                val psi = methodName?.let {
+                    psiClass.findMethodsByName(it, false).firstOrNull()
+                } ?: psiClass
+
+                val navigatable = psi as? Navigatable ?: return@addTreeSelectionListener
+                val canNavigate = navigatable.canNavigate()
+                if (canNavigate)
+                    navigatable.navigate(true)
+            }
         }
 
         fun createJunitPanel(consoleView: ConsoleView): JPanel {
@@ -149,11 +189,25 @@ class UiContentDescriptor(
     fun getConsoleView(): ConsoleView = executionConsole as ConsoleView
 }
 
-private object NoOpTestLocator : SMTestLocator {
+private object ParsedResultTestLocator : SMTestLocator {
     override fun getLocation(
         protocol: String,
         path: String,
         project: Project,
         scope: GlobalSearchScope
-    ): List<Location<out PsiElement>> = emptyList()
+    )
+            : List<Location<out PsiElement>> {
+        // Example: protocol = "java", path = "com.example.MyTest#testMethod"
+        println("ParsedResultTestLocator: protocol=$protocol, path=$path")
+        if (protocol != "java") return emptyList()
+
+        val hashIdx = path.indexOf('#')
+        if (hashIdx < 0) return emptyList()
+        val classFqn = path.substring(0, hashIdx)
+        val methodName = path.substring(hashIdx + 1)
+        val psiFacade = JavaPsiFacade.getInstance(project)
+        val psiClass = psiFacade.findClass(classFqn, scope) ?: return emptyList()
+        val method = psiClass.findMethodsByName(methodName, false).firstOrNull() ?: return emptyList()
+        return listOf(com.intellij.execution.PsiLocation.fromPsiElement(project, method))
+    }
 }
