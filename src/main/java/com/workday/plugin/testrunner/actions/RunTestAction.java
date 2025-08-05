@@ -29,7 +29,8 @@ import com.workday.plugin.testrunner.target.TestTargetExtractor;
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 
 /**
- * Currently are not used, but can be useful for the context menu actions.
+ * Currently is not used, but can be useful for the context menu actions.
+ *
  * Action to run OMS tests based on the selected target type (method or class).
  * It prompts for a host and executes the test using the appropriate run strategy.
  *

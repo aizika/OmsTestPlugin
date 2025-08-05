@@ -1,20 +1,24 @@
 package com.workday.plugin.testrunner.actions;
 
-import static com.workday.plugin.testrunner.common.Locations.*;
+import static com.workday.plugin.testrunner.common.Locations.LOCALHOST;
+import static com.workday.plugin.testrunner.common.Locations.SUV_RESULTS_FILE;
+import static com.workday.plugin.testrunner.common.Locations.TEST_RESULTS_FOLDER_SUV_DOCKER;
+import static com.workday.plugin.testrunner.common.Locations.getBasePath;
+import static com.workday.plugin.testrunner.common.Locations.getLocalResultFile;
 
 import org.jetbrains.annotations.NotNull;
 
-import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.IconLoader;
 
 import com.workday.plugin.testrunner.common.LastTestStorage;
 import com.workday.plugin.testrunner.common.Locations;
 import com.workday.plugin.testrunner.execution.LocalRunStrategy;
 import com.workday.plugin.testrunner.execution.OSCommands;
-import com.workday.plugin.testrunner.execution.RunStrategy;
 import com.workday.plugin.testrunner.execution.RemoteRunStrategy;
+import com.workday.plugin.testrunner.execution.RunStrategy;
 import com.workday.plugin.testrunner.execution.TestRunner;
 
 /**
@@ -28,7 +32,8 @@ public class ReRunLastTestAction
     extends AnAction {
 
     public ReRunLastTestAction() {
-        super("Re-Run OMS Test", "Re-runs the last executed OMS test", AllIcons.Actions.Restart);
+        super("Re-Run OMS Test", "Re-runs the last executed OMS test",
+            IconLoader.getIcon("icons/rerun.svg", ReRunLastTestAction.class));
     }
 
     @Override
