@@ -1,5 +1,7 @@
 package com.workday.plugin.testrunner.execution;
 
+import com.workday.plugin.testrunner.ui.UiContentDescriptor;
+
 /**
  * Interface defining the strategy for running tests in different environments.
  * Implementations provide specific behavior for local and remote test execution.
@@ -14,5 +16,7 @@ public interface RunStrategy {
     void copyTestResults();
     void verifyOms();
     void maybeStartPortForwarding(final int jmxPort);
+
+    void setProcessHandler(UiContentDescriptor.UiProcessHandler processHandler);
 }
 

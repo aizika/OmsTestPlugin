@@ -35,6 +35,7 @@ public class TestRunner {
     private final RunStrategy strategy;
     private final int jmxPort;
     private final String[] jmxParams;
+    private UiContentDescriptor.UiProcessHandler handler;
 
     public TestRunner(final @NotNull RunStrategy runStrategy, final int jmxPort, final String[] jmxParams) {
         this.strategy = runStrategy;
@@ -53,6 +54,7 @@ public class TestRunner {
             processHandler);
         RunContentManager.getInstance(project)
             .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor);
+        runStrategy.setProcessHandler(processHandler);
 
         try {
             processHandler.startNotify();
@@ -66,37 +68,42 @@ public class TestRunner {
             new TestRunner(runStrategy, jmxPort, jmxParams).runTests(processHandler);
         }
         catch (Exception ex) {
-            if (descriptor.getUiProcessHandler() != null) {
-                descriptor.getUiProcessHandler().notifyTextAvailable(
-                    "An error occurred: " + ex.getMessage() + "\n",
-                    ProcessOutputTypes.STDERR
-                                                                    );
-                descriptor.getUiProcessHandler().destroyProcess();
-                RunContentManager.getInstance(project)
-                    .removeRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor);
-            }
+            processHandler.notifyTextAvailable(
+                "An error occurred: " + ex.getMessage() + "\n", ProcessOutputTypes.STDERR);
+            descriptor.getUiProcessHandler().destroyProcess();
+            RunContentManager.getInstance(project)
+                .removeRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor);
         }
     }
 
     public void runTests(final UiContentDescriptor.UiProcessHandler handler) {
+        this.handler = handler;
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
-                handler.notifyTextAvailable("Running tests with parameters: " + String.join(", ", jmxParams) + "\n",
-                    ProcessOutputTypes.STDOUT);
+                log("Running tests");
                 final String result = runTestOms(jmxParams);
-                handler.notifyTextAvailable("Result: " + result + "\n", ProcessOutputTypes.STDOUT);
-                handler.notifyTextAvailable("Copying test results", ProcessOutputTypes.STDOUT);
+                log("Result: " + result + "\n");
+                log("Retrieving test output");
                 strategy.copyTestResults();
                 new TestResultPresenter().displayParsedResults(handler);
             }
             catch (Exception ex) {
-                handler.notifyTextAvailable("❌ Test run failed: " + ex.getMessage() + "\n", ProcessOutputTypes.STDERR);
+                logError("❌ Test run failed: " + ex.getMessage() + "\n");
                 StringWriter sw = new StringWriter();
                 ex.printStackTrace(new PrintWriter(sw));
-                handler.notifyTextAvailable(sw.toString(), ProcessOutputTypes.STDERR);
+                final String string = sw.toString();
+                logError(string);
                 handler.finish(1);
             }
         });
+    }
+
+    private void logError(final String string) {
+        this.handler.notifyTextAvailable(string, ProcessOutputTypes.STDERR);
+    }
+
+    private void log(final String text) {
+        this.handler.notifyTextAvailable(text + "\n", ProcessOutputTypes.STDOUT);
     }
 
     private String runTestOms(final String @NotNull [] jmxParams)
@@ -118,6 +125,7 @@ public class TestRunner {
     }
 
     private String runCommand(final JUnitTestingMXBean mxBean, final String[] args) {
+        log("Running tests with parameters: " + String.join(", ", jmxParams) + ", " + strategy.getJmxResultFolder());
         String result = mxBean.executeTestSuite(args[0], args[1], args[2], args[3], args[4],
             strategy.getJmxResultFolder());
         System.out.println(result);

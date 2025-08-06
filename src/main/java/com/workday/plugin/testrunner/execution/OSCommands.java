@@ -3,6 +3,10 @@ package com.workday.plugin.testrunner.execution;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
+import com.intellij.execution.process.ProcessOutputTypes;
+
+import com.workday.plugin.testrunner.ui.UiContentDescriptor;
+
 /**
  * OSCommands class provides methods to execute various OS commands
  * for managing files and processes on local and remote servers.
@@ -19,13 +23,20 @@ public class OSCommands {
     private static final String CMD_START_PORT_FORWARDING = "ssh -o StrictHostKeyChecking=no -L %d:localhost:%d %s@%s";
 
     private final String host;
+    private UiContentDescriptor.UiProcessHandler processHandler;
 
     public OSCommands(final String host) {
         this.host = host;
     }
 
     public void deleteLocalFile(final String file) {
-        executeLocalCommand(String.format(CMD_DELETE_FILE, file));
+        final String cmd = String.format(CMD_DELETE_FILE, file);
+        log(cmd);
+        executeLocalCommand(cmd);
+    }
+
+    private void log(final String cmd) {
+        this.processHandler.notifyTextAvailable(cmd + "\n", ProcessOutputTypes.STDOUT);
     }
 
     public void deleteRemoteFile(final String file) {
@@ -54,6 +65,7 @@ public class OSCommands {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
+//                    log(line);
                     if (line.contains("Welcome to console login for your Workday SUV Virtual Machine!")) {
                         return;
                     }
@@ -70,7 +82,12 @@ public class OSCommands {
 
     public String executeRemoteCommand(final String cmd) {
         final String remoteCmd = String.format(CMD_ON_SUV, SUV_USER, host, cmd);
+        log(remoteCmd);
         return execute(remoteCmd);
+    }
+
+    public void setProcessHandler(final UiContentDescriptor.UiProcessHandler processHandler) {
+        this.processHandler = processHandler;
     }
 
     private String execute(final String cmd) {
