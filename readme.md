@@ -1,5 +1,5 @@
 <h1>
-  <img src="https://raw.githubusercontent.com/aizika/OmsTest/master/src/main/resources/META-INF/GradleTest.png" alt="Plugin Icon" width="40" style="vertical-align: middle;"/>
+  <img src="https://raw.githubusercontent.com/aizika/OmsTest/master/src/main/resources/META-INF/oms-logo.png" alt="Plugin Icon" width="40" style="vertical-align: middle;"/>
   Gradle Test Runner IntelliJ Plugin
 </h1>
 
