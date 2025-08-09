@@ -1,8 +1,5 @@
 package com.workday.plugin.testrunner.execution;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.intellij.execution.process.ProcessOutputTypes;
 
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
@@ -16,7 +13,6 @@ import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 public class RemoteRunStrategy
     implements RunStrategy {
 
-    private static final Logger log = LoggerFactory.getLogger(RemoteRunStrategy.class);
     private final OSCommands osCommands;
     private final String host;
     private final String localResultFile;

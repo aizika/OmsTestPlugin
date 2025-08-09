@@ -1,11 +1,6 @@
 package com.workday.plugin.testrunner.target;
 
-import org.jetbrains.annotations.NotNull;
-import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.openapi.editor.Editor;
 import com.intellij.psi.*;
-import com.intellij.psi.util.PsiTreeUtil;
 
 /**
  * Utility class to extract test target information from the current context in IntelliJ.
@@ -29,65 +24,6 @@ public class TestTargetExtractor {
         return false;
     }
 
-    public static @NotNull TestTarget getTestTarget(@NotNull AnActionEvent event) {
-        PsiFile psiFile = event.getData(CommonDataKeys.PSI_FILE);
-        Editor editor = event.getData(CommonDataKeys.EDITOR);
-        PsiElement fallback = event.getData(CommonDataKeys.PSI_ELEMENT);
-
-        String packageName = getPackage(psiFile, fallback);
-        PsiClass psiClass = getPsiClass(psiFile, editor, fallback);
-        PsiMethod method = getPsiMethod(psiFile, editor, fallback);
-
-        return new TestTarget(
-            buildMethodSignature(getClassName(psiClass), method),
-            getClassName(psiClass),
-            packageName,
-            extractTestCategory(psiClass),
-            isTestLikeMethod(method)
-        );
-    }
-
-    static String getPackage(PsiFile psiFile, PsiElement fallback) {
-        if (psiFile instanceof PsiJavaFile javaFile) {
-            return javaFile.getPackageName();
-        }
-        PsiJavaFile fromElement = PsiTreeUtil.getParentOfType(fallback, PsiJavaFile.class, false);
-        return (fromElement != null) ? fromElement.getPackageName() : "";
-    }
-
-    static PsiClass getPsiClass(PsiFile psiFile, Editor editor, PsiElement fallback) {
-        return PsiTreeUtil.getParentOfType(getElement(psiFile, editor, fallback), PsiClass.class);
-    }
-
-    static PsiMethod getPsiMethod(PsiFile psiFile, Editor editor, PsiElement fallback) {
-        return PsiTreeUtil.getParentOfType(getElement(psiFile, editor, fallback), PsiMethod.class);
-    }
-
-    private static PsiElement getElement(PsiFile psiFile, Editor editor, PsiElement fallback) {
-        if (psiFile != null && editor != null) {
-            PsiElement at = psiFile.findElementAt(editor.getCaretModel().getOffset());
-            return (at != null) ? at : fallback;
-        }
-        return fallback;
-    }
-
-    static String extractTestCategory(PsiClass psiClass) {
-        if (psiClass == null) return "";
-
-        PsiAnnotation tagAnnotation = getAnnotation(psiClass);
-        if (tagAnnotation == null) return "";
-
-        PsiAnnotationMemberValue value = tagAnnotation.findAttributeValue("value");
-        if (value instanceof PsiReferenceExpression ref) {
-            String text = ref.getText();
-            if (text.startsWith("OmsTestCategories.")) {
-                String[] parts = text.split("\\.");
-                return (parts.length == 2) ? parts[1] : "";
-            }
-        }
-        return "";
-    }
-
     public static boolean isTestLikeMethod(PsiMethod method) {
         if (method == null) return false;
 
@@ -109,25 +45,4 @@ public class TestTargetExtractor {
         return false;
     }
 
-    public static String buildMethodSignature(String classFqName, PsiMethod method) {
-        if (method == null) return classFqName;
-
-        StringBuilder paramTypes = new StringBuilder();
-        for (PsiParameter param : method.getParameterList().getParameters()) {
-            if (!paramTypes.isEmpty()) paramTypes.append(",");
-            paramTypes.append(param.getType().getCanonicalText());
-        }
-
-        return classFqName + "@" + method.getName() +
-            (paramTypes.isEmpty() ? "" : "(" + paramTypes + ")");
-    }
-
-    private static PsiAnnotation getAnnotation(PsiClass psiClass) {
-        PsiModifierList modifierList = psiClass.getModifierList();
-        return (modifierList != null) ? modifierList.findAnnotation("org.junit.jupiter.api.Tag") : null;
-    }
-
-    static String getClassName(PsiClass psiClass) {
-        return (psiClass != null) ? psiClass.getQualifiedName() : "";
-    }
 }

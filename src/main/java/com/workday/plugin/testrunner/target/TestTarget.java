@@ -9,19 +9,7 @@ package com.workday.plugin.testrunner.target;
  * @author alexander.aizikivsky
  * @since Jun-2025
  */
-public class TestTarget {
+public record TestTarget(String methodName, String className, String packageName, String testCategory,
+                         boolean isTestMethod) {
 
-    public final String packageName;
-    public final String className;
-    public final String methodName;
-    public final String testCategory;
-    public final boolean isTestMethod;
-
-    public TestTarget(String methodName, String className, String packageName, String testCategory, boolean isTestMethod) {
-        this.packageName = packageName;
-        this.className = className;
-        this.methodName = methodName;
-        this.testCategory = testCategory;
-        this.isTestMethod = isTestMethod;
-    }
 }

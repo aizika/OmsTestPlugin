@@ -40,8 +40,8 @@ public class TestResultPresenter {
     }
 
     private void displayTestSuiteResult(TestSuiteResult suite, ProcessHandler processHandler) {
-        Map<String, List<TestMethodResult>> grouped = suite.results.stream()
-            .collect(Collectors.groupingBy(TestMethodResult::getClassName));
+        Map<String, List<TestMethodResult>> grouped = suite.results().stream()
+            .collect(Collectors.groupingBy(TestMethodResult::className));
 
         for (Map.Entry<String, List<TestMethodResult>> entry : grouped.entrySet()) {
             String className = entry.getKey();
@@ -55,7 +55,7 @@ public class TestResultPresenter {
                                               );
 
             Map<String, TestMethodResult> resultMap = results.stream()
-                .collect(Collectors.toMap(TestMethodResult::getName, r -> r));
+                .collect(Collectors.toMap(TestMethodResult::name, r -> r));
             displayResults(resultMap, processHandler);
 
             processHandler.notifyTextAvailable(
@@ -70,21 +70,21 @@ public class TestResultPresenter {
             .sorted(Map.Entry.comparingByKey())
             .map(Map.Entry::getValue)
             .forEach(result -> {
-                String escapedName = escapeTc(result.getName());
-                String strippedBracketsName = result.getName().replaceAll("\\(.*?\\)|\\[.*?]", "");
-                String location = "java:" + result.getClassName() + "#" + strippedBracketsName;
+                String escapedName = escapeTc(result.name());
+                String strippedBracketsName = result.name().replaceAll("\\(.*?\\)|\\[.*?]", "");
+                String location = "java:" + result.className() + "#" + strippedBracketsName;
                 processHandler.notifyTextAvailable(
                     "##teamcity[testStarted name='" + escapedName + "' captureStandardOutput='true' locationHint='"
                         + location + "']\n",
                     ProcessOutputTypes.STDOUT);
 
-                switch (result.getStatus()) {
+                switch (result.status()) {
                 case FAILED:
                     processHandler.notifyTextAvailable(
                         String.format("##teamcity[testFailed name='%s' message='%s' details='%s']\n",
                             escapedName,
-                            escapeTc(defaultIfNull(result.getFailureMessage(), "Failed")),
-                            escapeTc(defaultIfNull(result.getFailureDetails(), ""))),
+                            escapeTc(defaultIfNull(result.failureMessage(), "Failed")),
+                            escapeTc(defaultIfNull(result.failureDetails(), ""))),
                         ProcessOutputTypes.STDOUT
                                                       );
                     break;
@@ -92,8 +92,8 @@ public class TestResultPresenter {
                     processHandler.notifyTextAvailable(
                         String.format("##teamcity[testFailed name='%s' message='%s' details='%s']\n",
                             escapedName,
-                            escapeTc(defaultIfNull(result.getErrorMessage(), "Error")),
-                            escapeTc(defaultIfNull(result.getErrorDetails(), ""))),
+                            escapeTc(defaultIfNull(result.errorMessage(), "Error")),
+                            escapeTc(defaultIfNull(result.errorDetails(), ""))),
                         ProcessOutputTypes.STDOUT
                                                       );
                     break;
@@ -101,7 +101,7 @@ public class TestResultPresenter {
                     processHandler.notifyTextAvailable(
                         String.format("##teamcity[testIgnored name='%s' message='%s']\n",
                             escapedName,
-                            escapeTc(defaultIfNull(result.getSkippedMessage(), "Skipped"))),
+                            escapeTc(defaultIfNull(result.skippedMessage(), "Skipped"))),
                         ProcessOutputTypes.STDOUT
                                                       );
                     break;
@@ -112,7 +112,7 @@ public class TestResultPresenter {
                 processHandler.notifyTextAvailable(
                     String.format("##teamcity[testFinished name='%s' duration='%s']\n",
                         escapedName,
-                        result.getTimeInMillisStr()),
+                        result.timeInMillisStr()),
                     ProcessOutputTypes.STDOUT
                                                   );
             });

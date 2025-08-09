@@ -42,7 +42,6 @@ import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.util.ui.UIUtil;
 
 import com.workday.plugin.testrunner.actions.ReRunLastTestAction;
-import com.workday.plugin.testrunner.common.LastTestStorage;
 
 /**
  * This class represents a UI content descriptor for JUnit test results in Run Tool Window.
