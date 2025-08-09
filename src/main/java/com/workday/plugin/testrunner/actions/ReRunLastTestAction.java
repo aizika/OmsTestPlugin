@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.IconLoader;
 
 import com.workday.plugin.testrunner.common.LastTestStorage;
 import com.workday.plugin.testrunner.common.Locations;
@@ -30,6 +31,11 @@ import com.workday.plugin.testrunner.ui.UiContentDescriptor;
  */
 public class ReRunLastTestAction
     extends AnAction {
+
+    public ReRunLastTestAction() {
+        super("Re-Run OMS Test", "Re-runs the last executed OMS test",
+            IconLoader.getIcon("icons/rerun.svg", ReRunLastTestAction.class));
+    }
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
