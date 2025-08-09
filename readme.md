@@ -1,5 +1,5 @@
 <h1>
-  <img src="https://raw.githubusercontent.com/aizika/OmsTest/master/src/main/resources/META-INF/oms-logo.png" alt="Plugin Icon" width="40" style="vertical-align: middle;"/>
+  <img src="https://raw.githubusercontent.com/aizika/OmsTestPlugin/master/src/main/resources/META-INF/oms-logo.png" alt="Plugin Icon" width="40" style="vertical-align: middle;"/>
   OMS Test Runner IntelliJ Plugin
 </h1>
 
@@ -11,7 +11,7 @@ It also includes a one-click option to re-run the last test.
 ---
 ## 🚀 Get the Plugin
 You can download the pre-built ZIP file:
-👉 [Download Plugin ZIP](https://github.com/aizika/OmsTest/releases/download/v2.0-beta/OmsTest-2.0-BETA.zip)
+👉 [Download Plugin ZIP](https://github.com/aizika/OmsTestPlugin/releases/download/v2.0-beta/OmsTest-2.0-BETA.zip)
 
 or build it from source:
 
