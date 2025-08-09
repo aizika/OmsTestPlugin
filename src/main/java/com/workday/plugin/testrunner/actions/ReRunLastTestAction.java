@@ -32,6 +32,7 @@ import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 public class ReRunLastTestAction
     extends AnAction {
 
+    @SuppressWarnings("ActionPresentationInstantiatedInCtor")  // this is the only way to show the correct icon
     public ReRunLastTestAction() {
         super("Re-Run OMS Test", "Re-runs the last executed OMS test",
             IconLoader.getIcon("icons/rerun.svg", ReRunLastTestAction.class));
