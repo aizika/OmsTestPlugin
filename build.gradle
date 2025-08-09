@@ -1,0 +1,38 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.9.0'
+    id 'org.jetbrains.intellij'   version '1.17.3'
+}
+
+group = 'com.workday.plugin'
+version = '2.0-BETA'
+
+repositories { mavenCentral() }
+
+intellij {
+    version = '2024.1'
+    type    = 'IC'
+    plugins = ['java']
+}
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(17) }
+}
+
+// configure by name (no tasks { } wrapper)
+runIde {
+    systemProperty 'ide.show.tips.on.startup.default.value', false
+    systemProperty 'idea.is.internal', true
+}
+
+patchPluginXml {
+    sinceBuild  = '240'
+    untilBuild  = '999.*'
+    changeNotes = 'Initial plugin to run Gradle test by class or method.'
+}
+
+// Java compile options
+tasks.withType(JavaCompile).configureEach {
+    sourceCompatibility = JavaVersion.VERSION_17.toString()
+    targetCompatibility = JavaVersion.VERSION_17.toString()
+    options.encoding = 'UTF-8'
+}
