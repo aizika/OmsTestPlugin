@@ -1,5 +1,8 @@
 package com.workday.plugin.testrunner.execution;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.intellij.execution.process.ProcessOutputTypes;
 
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
@@ -13,6 +16,7 @@ import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 public class RemoteRunStrategy
     implements RunStrategy {
 
+    private static final Logger log = LoggerFactory.getLogger(RemoteRunStrategy.class);
     private final OSCommands osCommands;
     private final String host;
     private final String localResultFile;
@@ -44,12 +48,14 @@ public class RemoteRunStrategy
 
     @Override
     public void deleteTempFiles() {
+        log("Deleting result files: " + localResultFile + ", " + remotePath);
         osCommands.deleteLocalFile(localResultFile);
         osCommands.deleteRemoteFile(remotePath);
     }
 
     @Override
     public void copyTestResults() {
+        log("Copying result file from " + remotePath + " to " + localResultFile);
         osCommands.copyFileFromRemote(remotePath, localResultFile);
     }
 
@@ -63,14 +69,16 @@ public class RemoteRunStrategy
             log(errorMessage);
             throw new RuntimeException(errorMessage);
         }
+        log("Oms tenant found.");
     }
 
     private void log(final String errorMessage) {
-        this.processHandler.notifyTextAvailable(errorMessage, ProcessOutputTypes.STDOUT);
+        this.processHandler.notifyTextAvailable(errorMessage + "\n", ProcessOutputTypes.STDOUT);
     }
 
     @Override
     public void maybeStartPortForwarding(final int jmxPort) {
+        log("Starting port forwarding for JMX on port " + jmxPort);
         osCommands.startPortForwarding(jmxPort);
     }
 

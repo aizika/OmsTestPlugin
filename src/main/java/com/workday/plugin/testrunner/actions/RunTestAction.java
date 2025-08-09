@@ -52,7 +52,7 @@ public class RunTestAction
         TestTarget testTarget = TestTargetExtractor.getTestTarget(e);
         RunStrategy runStrategy = getRunStrategy(host);
          final String[] jmxParams = ParamBuilder.getJmxParams(getTargetType(), testTarget);
-        TestRunner.runTest(project, host, "HelloWorld", jmxParams, runStrategy);
+        TestRunner.runTest(project, host, jmxParams, runStrategy, null);
     }
 
 

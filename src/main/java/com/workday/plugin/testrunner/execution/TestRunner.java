@@ -46,25 +46,18 @@ public class TestRunner {
     public static void runTest(
         Project project,
         String host,
-        String displayName,
         String[] jmxParams,
-        RunStrategy runStrategy) {
-        final UiContentDescriptor.UiProcessHandler processHandler = new UiContentDescriptor.UiProcessHandler();
-        final UiContentDescriptor descriptor = UiContentDescriptor.createDescriptor(project, displayName,
-            processHandler);
-        RunContentManager.getInstance(project)
-            .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor);
+        RunStrategy runStrategy, final UiContentDescriptor descriptor) {
+
+        final UiContentDescriptor.UiProcessHandler processHandler = descriptor.getUiProcessHandler();
         runStrategy.setProcessHandler(processHandler);
 
         try {
-            processHandler.startNotify();
             processHandler.notifyTextAvailable("Running test on " + host + "\n", ProcessOutputTypes.STDOUT);
 
             final int jmxPort = runStrategy.getOmsJmxPort();
             runStrategy.deleteTempFiles();
             runStrategy.verifyOms();
-            runStrategy.maybeStartPortForwarding(jmxPort);
-
             new TestRunner(runStrategy, jmxPort, jmxParams).runTests(processHandler);
         }
         catch (Exception ex) {

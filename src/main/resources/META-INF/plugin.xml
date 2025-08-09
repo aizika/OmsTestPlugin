@@ -24,4 +24,13 @@
                 language="JAVA"
                 implementationClass="com.workday.plugin.testrunner.actions.GutterMarkerContributor"/>
     </extensions>
+    <actions>
+        <action id="com.workday.plugin.testrunner.actions.ReRunLastTestAction"
+                class="com.workday.plugin.testrunner.actions.ReRunLastTestAction"
+                text="Re-Run OMS Test"
+                description="Re-runs the last executed OMS test"
+                icon="/icons/rerun.svg">
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift R"/>
+        </action>
+    </actions>
 </idea-plugin>

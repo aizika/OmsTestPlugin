@@ -25,6 +25,7 @@ import com.workday.plugin.testrunner.execution.RunStrategy;
 import com.workday.plugin.testrunner.execution.RemoteRunStrategy;
 import com.workday.plugin.testrunner.execution.TestRunner;
 import com.workday.plugin.testrunner.target.TestTargetExtractor;
+import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 
 /**
  * This class contributes gutter markers for OMS test methods and classes.
@@ -116,6 +117,8 @@ public class GutterMarkerContributor
         return new AnAction(runTabName, null, Run) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent event) {
+                final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, runTabName);
+
                 RunStrategy runStrategy;
                 String host;
                 if (isRemote) {
@@ -137,8 +140,9 @@ public class GutterMarkerContributor
                 LastTestStorage.setRunTabName(runTabName);
                 LastTestStorage.setJmxParameters(jmxParameters);
                 LastTestStorage.setIsRemote(isRemote);
+                LastTestStorage.setBasePath(getBasePath());
 
-                TestRunner.runTest(project, host, runTabName, jmxParameters, runStrategy);
+                TestRunner.runTest(project, host, jmxParameters, runStrategy, uiDescriptor);
             }
         };
     }

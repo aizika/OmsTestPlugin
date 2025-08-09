@@ -27,6 +27,7 @@ import com.intellij.execution.testframework.sm.runner.SMTRunnerNodeDescriptor;
 import com.intellij.execution.testframework.sm.runner.SMTestLocator;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.RunContentDescriptor;
+import com.intellij.execution.ui.RunContentManager;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
@@ -41,6 +42,7 @@ import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.util.ui.UIUtil;
 
 import com.workday.plugin.testrunner.actions.ReRunLastTestAction;
+import com.workday.plugin.testrunner.common.LastTestStorage;
 
 /**
  * This class represents a UI content descriptor for JUnit test results in Run Tool Window.
@@ -162,6 +164,17 @@ public class UiContentDescriptor
         consolePanel.add(toolbar, BorderLayout.WEST);
         consolePanel.add(consoleView.getComponent(), BorderLayout.CENTER);
         return consolePanel;
+    }
+
+    public static UiContentDescriptor createUiDescriptor(final Project project, final String runTabName) {
+        final UiProcessHandler processHandler = new UiProcessHandler();
+        final UiContentDescriptor descriptor = createDescriptor(
+            project, runTabName,
+            processHandler);
+        RunContentManager.getInstance(project)
+            .showRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor);
+        processHandler.startNotify();
+        return descriptor;
     }
 
     public UiProcessHandler getUiProcessHandler() {

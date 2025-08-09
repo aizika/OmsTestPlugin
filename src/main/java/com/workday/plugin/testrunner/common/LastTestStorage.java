@@ -13,6 +13,12 @@ public class LastTestStorage {
     private static String[] jmxParameters;
     private static boolean isRemote;
 
+    public static String getBasePath() {
+        return basePath;
+    }
+
+    private static String basePath;
+
     public static String getRunTabName() {
         return runTabName;
     }
@@ -43,5 +49,9 @@ public class LastTestStorage {
 
     public static boolean getIsRemote() {
         return isRemote;
+    }
+
+    public static void setBasePath(final String basePath) {
+        LastTestStorage.basePath = basePath;
     }
 }

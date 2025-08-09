@@ -20,6 +20,7 @@ import com.workday.plugin.testrunner.execution.OSCommands;
 import com.workday.plugin.testrunner.execution.RemoteRunStrategy;
 import com.workday.plugin.testrunner.execution.RunStrategy;
 import com.workday.plugin.testrunner.execution.TestRunner;
+import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 
 /**
  * Action to re-run the last executed OMS test.
@@ -43,13 +44,15 @@ public class ReRunLastTestAction
         if (project == null) {
             return;
         }
-        Locations.setBasePath(project.getBasePath());
 
+        final String basePath = LastTestStorage.getBasePath();
         final boolean isRemote = LastTestStorage.getIsRemote();
         String[] jmxParameters = LastTestStorage.getJmxParameters();
         String runTabName = LastTestStorage.getRunTabName();
-        String host;
+        Locations.setBasePath(basePath);
+        final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, runTabName);
 
+        String host;
         RunStrategy runStrategy;
         if (isRemote) {
             host = LastTestStorage.getHost();
@@ -67,10 +70,8 @@ public class ReRunLastTestAction
         if (jmxParameters == null || jmxParameters.length == 0) {
             return;
         }
-        if (runTabName == null || runTabName.isBlank()) {
-            runTabName = "Re-run Last Test";
-        }
 
-        TestRunner.runTest(project, host, runTabName, jmxParameters, runStrategy);
+        TestRunner.runTest(project, host, jmxParameters, runStrategy, uiDescriptor);
     }
+
 }
