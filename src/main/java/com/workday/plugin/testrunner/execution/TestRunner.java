@@ -1,7 +1,5 @@
 package com.workday.plugin.testrunner.execution;
 
-import static java.lang.String.join;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -72,7 +70,8 @@ public class TestRunner {
                 // TODO: Investigate and remove this workaround when JMXTestExecutor is fixed
                 if (strategy.bypassJmxProxy()) {
                     new BypassTestExecutor(strategy, jmxPort, handler).runTestOms(jmxParams);
-                } else {
+                }
+                else {
                     new JmxTestExecutor(strategy, jmxPort, handler).runTestOms(jmxParams);
                 }
                 log("Retrieving test output");

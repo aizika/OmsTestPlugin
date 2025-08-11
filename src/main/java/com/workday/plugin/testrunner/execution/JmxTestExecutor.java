@@ -14,6 +14,7 @@ import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
 import com.intellij.execution.process.ProcessOutputTypes;
+
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 
 /**
@@ -75,6 +76,7 @@ public class JmxTestExecutor {
     }
 
     public interface JUnitTestingMXBean {
+
         String executeTestSuite(String testMethod,
                                 String testClass,
                                 String testPackage,
