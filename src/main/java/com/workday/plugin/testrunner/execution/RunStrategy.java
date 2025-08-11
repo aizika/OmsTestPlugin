@@ -17,6 +17,7 @@ public interface RunStrategy {
     void copyTestResults();
     void verifyOms();
     void maybeStartPortForwarding(final int jmxPort);
+    boolean bypassJmxProxy();
 
     void setProcessHandler(UiContentDescriptor.UiProcessHandler processHandler);
 }

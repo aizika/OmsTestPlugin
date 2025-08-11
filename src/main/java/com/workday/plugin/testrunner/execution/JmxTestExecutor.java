@@ -1,6 +1,7 @@
 package com.workday.plugin.testrunner.execution;
 
 import static java.lang.String.join;
+import static java.lang.Thread.sleep;
 
 import java.io.IOException;
 
@@ -36,6 +37,12 @@ public class JmxTestExecutor {
     public String runTestOms(final String[] jmxParams)
         throws IOException, MalformedObjectNameException {
         strategy.maybeStartPortForwarding(jmxPort);
+        try {
+            sleep(2000); // wait for port forwarding to be established
+        }
+        catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         String hostPort = String.format("localhost:%d", jmxPort);
         JMXServiceURL url = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + hostPort + "/jmxrmi");
         try (JMXConnector connector = JMXConnectorFactory.connect(url, null)) {
@@ -55,7 +62,7 @@ public class JmxTestExecutor {
         log("Running tests with parameters: " + join(", ", args) + ", " + strategy.getJmxResultFolder());
         String result = mxBean.executeTestSuite(args[0], args[1], args[2], args[3], args[4],
             strategy.getJmxResultFolder());
-        System.out.println(result);
+        log(result);
         return result;
     }
 

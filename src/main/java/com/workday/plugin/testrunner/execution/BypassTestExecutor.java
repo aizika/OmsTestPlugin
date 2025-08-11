@@ -10,13 +10,13 @@ import com.intellij.openapi.util.NlsContexts;
 
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 
-public final class RemoteTestExecutor {
+public final class BypassTestExecutor {
 
     private final RunStrategy strategy;
     private final int jmxPort;
     private final UiContentDescriptor.UiProcessHandler handler;
 
-    public RemoteTestExecutor(final RunStrategy strategy,
+    public BypassTestExecutor(final RunStrategy strategy,
                               final int jmxPort,
                               final UiContentDescriptor.UiProcessHandler handler) {
         this.strategy = strategy;
@@ -24,7 +24,7 @@ public final class RemoteTestExecutor {
         this.handler = handler;
     }
 
-    public void runTestOms(String[] jmxParams, String host) {
+    public void runTestOms(String[] jmxParams) {
         // Build JMX input (single-line with literal \n sequences)
         final String jmxparams = join(" ", jmxParams) + " " + strategy.getJmxResultFolder();
 
@@ -34,17 +34,17 @@ public final class RemoteTestExecutor {
             "bean name=JunitTestListener",
             "run executeTestSuite " + jmxparams).replace("\n", "\\n");
 
-        String sshCommand = buildSshCommand(host, jmxInput);
-        runRemoteCommand(sshCommand, "Running test on " + host);
+        String sshCommand = buildSshCommand(jmxInput);
+        runRemoteCommand(sshCommand, "Running test on " + strategy.getHost());
     }
 
-    private String buildSshCommand(String host, String jmxInput) {
+    private String buildSshCommand(String jmxInput) {
         // Note: escape the inner quotes for the remote shell
         return String.format(
             "ssh -o StrictHostKeyChecking=accept-new root@%s " +
                 "\"docker exec ots-17-17 mkdir -p /usr/local/workday-oms/logs/junit && " +
                 "echo -e \\\"%s\\\" | java -jar /usr/local/bin/jmxterm-1.0-SNAPSHOT-uber.jar\"",
-            host, jmxInput);
+            strategy.getHost(), jmxInput);
     }
 
     private  void runRemoteCommand(String command,

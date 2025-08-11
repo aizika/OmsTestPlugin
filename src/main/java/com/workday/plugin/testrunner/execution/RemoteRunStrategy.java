@@ -84,6 +84,11 @@ public class RemoteRunStrategy
     }
 
     @Override
+    public boolean bypassJmxProxy() {
+        return true;
+    }
+
+    @Override
     public void setProcessHandler(final UiContentDescriptor.UiProcessHandler processHandler) {
         this.processHandler = processHandler;
         this.osCommands.setProcessHandler(processHandler);

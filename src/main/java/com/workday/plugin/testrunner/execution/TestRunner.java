@@ -51,7 +51,7 @@ public class TestRunner {
             final int jmxPort = runStrategy.getOmsJmxPort();
             runStrategy.deleteTempFiles();
             runStrategy.verifyOms();
-            new TestRunner(runStrategy, jmxPort, jmxParams).runTests(processHandler, host);
+            new TestRunner(runStrategy, jmxPort, jmxParams).runTests(processHandler);
         }
         catch (Exception ex) {
             processHandler.notifyTextAvailable(
@@ -62,14 +62,13 @@ public class TestRunner {
         }
     }
 
-    public void runTests(final UiContentDescriptor.UiProcessHandler handler, final String host) {
+    public void runTests(final UiContentDescriptor.UiProcessHandler handler) {
         this.handler = handler;
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 log("Running tests");
-                final String params = join(" ", jmxParams) + " " + strategy.getJmxResultFolder();
-                if (true) {
-                    new RemoteTestExecutor(strategy, jmxPort, handler).runTestOms(jmxParams, host);
+                if (strategy.bypassJmxProxy()) {
+                    new BypassTestExecutor(strategy, jmxPort, handler).runTestOms(jmxParams);
                 } else {
                     new JmxTestExecutor(strategy, jmxPort, handler).runTestOms(jmxParams);
                 }

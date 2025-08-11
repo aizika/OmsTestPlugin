@@ -73,6 +73,11 @@ public class LocalRunStrategy
     }
 
     @Override
+    public boolean bypassJmxProxy() {
+        return false;
+    }
+
+    @Override
     public void setProcessHandler(final UiContentDescriptor.UiProcessHandler processHandler) {
         this.processHandler = processHandler;
         this.osCommands.setProcessHandler(processHandler);
