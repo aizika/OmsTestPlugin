@@ -67,6 +67,9 @@ public class TestRunner {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 log("Running tests");
+                //   JmxTestExecutor supposed to work always, but sometimes it fails to create XML log files.
+                //  To deal with this, we use a BypassTestExecutor that runs the JMX command directly on the remote server
+                // TODO: Investigate and remove this workaround when JMXTestExecutor is fixed
                 if (strategy.bypassJmxProxy()) {
                     new BypassTestExecutor(strategy, jmxPort, handler).runTestOms(jmxParams);
                 } else {

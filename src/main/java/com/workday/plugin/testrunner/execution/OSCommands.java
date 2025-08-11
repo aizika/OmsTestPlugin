@@ -65,7 +65,6 @@ public class OSCommands {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-//                    log(line);
                     if (line.contains("Welcome to console login for your Workday SUV Virtual Machine!")) {
                         return;
                     }

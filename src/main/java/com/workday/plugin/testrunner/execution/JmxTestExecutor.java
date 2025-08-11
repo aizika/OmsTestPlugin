@@ -17,8 +17,12 @@ import com.intellij.execution.process.ProcessOutputTypes;
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 
 /**
- * Extracted local (JMX) test runner.
- * Contains the previous TestRunner#runTestOms and its dependencies with minimal changes.
+ * JMX test executor.
+ * JmxTestExecutor supposed to work always, but sometimes it fails to create XML log files.
+ * To deal with this, we use a BypassTestExecutor that runs the JMX command directly on the remote server
+ *
+ * @author alexander.aizikivsky
+ * @since Jun-2025
  */
 public class JmxTestExecutor {
 
