@@ -1,16 +1,9 @@
 package com.workday.plugin.testrunner.execution;
 
-import java.io.IOException;
+import static java.lang.String.join;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
-
-import javax.management.JMX;
-import javax.management.MBeanServerConnection;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
-import javax.management.remote.JMXServiceURL;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -58,7 +51,7 @@ public class TestRunner {
             final int jmxPort = runStrategy.getOmsJmxPort();
             runStrategy.deleteTempFiles();
             runStrategy.verifyOms();
-            new TestRunner(runStrategy, jmxPort, jmxParams).runTests(processHandler);
+            new TestRunner(runStrategy, jmxPort, jmxParams).runTests(processHandler, host);
         }
         catch (Exception ex) {
             processHandler.notifyTextAvailable(
@@ -69,13 +62,17 @@ public class TestRunner {
         }
     }
 
-    public void runTests(final UiContentDescriptor.UiProcessHandler handler) {
+    public void runTests(final UiContentDescriptor.UiProcessHandler handler, final String host) {
         this.handler = handler;
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 log("Running tests");
-                final String result = runTestOms(jmxParams);
-                log("Result: " + result + "\n");
+                final String params = join(" ", jmxParams) + " " + strategy.getJmxResultFolder();
+                if (true) {
+                    new RemoteTestExecutor(strategy, jmxPort, handler).runTestOms(jmxParams, host);
+                } else {
+                    new JmxTestExecutor(strategy, jmxPort, handler).runTestOms(jmxParams);
+                }
                 log("Retrieving test output");
                 strategy.copyTestResults();
                 new TestResultPresenter().displayParsedResults(handler);
@@ -98,41 +95,4 @@ public class TestRunner {
     private void log(final String text) {
         this.handler.notifyTextAvailable(text + "\n", ProcessOutputTypes.STDOUT);
     }
-
-    private String runTestOms(final String @NotNull [] jmxParams)
-        throws IOException, MalformedObjectNameException {
-        strategy.maybeStartPortForwarding(jmxPort);
-        String hostPort = String.format("localhost:%d", jmxPort);
-        JMXServiceURL url = new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + hostPort + "/jmxrmi");
-        try (JMXConnector connector = JMXConnectorFactory.connect(url, null)) {
-            JUnitTestingMXBean bean = getJUnitTestingMXBean(connector);
-            return runCommand(bean, jmxParams);
-        }
-    }
-
-    private static JUnitTestingMXBean getJUnitTestingMXBean(final JMXConnector jmxConnector)
-        throws IOException, MalformedObjectNameException {
-        final MBeanServerConnection mbeanConn = jmxConnector.getMBeanServerConnection();
-        final ObjectName mbeanName = new ObjectName("com.workday.oms:name=JunitTestListener");
-        return JMX.newMBeanProxy(mbeanConn, mbeanName, JUnitTestingMXBean.class);
-    }
-
-    private String runCommand(final JUnitTestingMXBean mxBean, final String[] args) {
-        log("Running tests with parameters: " + String.join(", ", jmxParams) + ", " + strategy.getJmxResultFolder());
-        String result = mxBean.executeTestSuite(args[0], args[1], args[2], args[3], args[4],
-            strategy.getJmxResultFolder());
-        System.out.println(result);
-        return result;
-    }
-
-    public interface JUnitTestingMXBean {
-
-        String executeTestSuite(String testMethod,
-                                String testClass,
-                                String testPackage,
-                                String testConcurrent,
-                                String testCategory,
-                                String toDir);
-    }
 }
-

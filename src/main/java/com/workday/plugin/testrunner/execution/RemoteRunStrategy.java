@@ -38,6 +38,11 @@ public class RemoteRunStrategy
     }
 
     @Override
+    public String getHost() {
+        return this.host;
+    }
+
+    @Override
     public int getOmsJmxPort() {
         return osCommands.getRemoteOmsJmxPort();
     }

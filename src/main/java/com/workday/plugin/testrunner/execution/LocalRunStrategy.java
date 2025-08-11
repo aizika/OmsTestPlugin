@@ -1,5 +1,7 @@
 package com.workday.plugin.testrunner.execution;
 
+import static com.workday.plugin.testrunner.common.Locations.LOCALHOST;
+
 import com.intellij.execution.process.ProcessOutputType;
 
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
@@ -28,6 +30,11 @@ public class LocalRunStrategy
     @Override
     public String getJmxResultFolder() {
         return testResultsFolderLocal;
+    }
+
+    @Override
+    public String getHost() {
+        return LOCALHOST;
     }
 
     @Override

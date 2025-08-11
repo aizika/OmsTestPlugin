@@ -11,6 +11,7 @@ import com.workday.plugin.testrunner.ui.UiContentDescriptor;
  */
 public interface RunStrategy {
     String getJmxResultFolder();
+    String getHost();
     int getOmsJmxPort();
     void deleteTempFiles();
     void copyTestResults();
