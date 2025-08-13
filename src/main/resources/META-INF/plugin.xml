@@ -30,7 +30,7 @@
                 text="Re-Run OMS Test"
                 description="Re-runs the last executed OMS test"
                 icon="/icons/rerun.svg">
-            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift meta R"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl option meta R"/>
         </action>
     </actions>
 </idea-plugin>

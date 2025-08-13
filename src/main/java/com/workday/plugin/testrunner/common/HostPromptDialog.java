@@ -64,17 +64,13 @@ public class HostPromptDialog
     }
 
     public String getHost() {
-        return normalizeHost(hostTextField.getText().trim());
-    }
-
-    private String normalizeHost(String input) {
-        Pattern pattern = Pattern.compile("i-[a-f0-9]+");
-        Matcher matcher = pattern.matcher(input);
+        Pattern pattern = Pattern.compile("i-[a-f0-9]{17}");
+        Matcher matcher = pattern.matcher(hostTextField.getText().trim());
         if (matcher.find()) {
             String id = matcher.group();
             return id + ".workdaysuv.com";
         }
-        return input;
+        return "";
     }
 
     @Override

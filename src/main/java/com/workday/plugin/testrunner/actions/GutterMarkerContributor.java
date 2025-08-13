@@ -5,7 +5,9 @@ import static com.workday.plugin.testrunner.common.Locations.*;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.intellij.execution.executors.DefaultRunExecutor;
 import com.intellij.execution.lineMarker.RunLineMarkerContributor;
+import com.intellij.execution.ui.RunContentManager;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
@@ -117,9 +119,8 @@ public class GutterMarkerContributor
         return new AnAction(runTabName, null, Run) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent event) {
-                final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, runTabName);
 
-                RunStrategy runStrategy;
+                final RunStrategy runStrategy;
                 String host;
                 if (isRemote) {
                     host = getHost();
@@ -131,9 +132,9 @@ public class GutterMarkerContributor
                 }
                 else {
                     host = LOCALHOST;
-                    runStrategy = new LocalRunStrategy(new OSCommands(host), getLocalResultFile(),
-                        getBasePath());
+                    runStrategy = new LocalRunStrategy(new OSCommands(host), getLocalResultFile(), getBasePath());
                 }
+                final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, runTabName);
                 if (isRemote) {
                     LastTestStorage.setHost(host);
                 }
