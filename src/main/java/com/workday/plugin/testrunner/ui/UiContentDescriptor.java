@@ -19,6 +19,7 @@ import com.intellij.execution.configurations.RunConfigurationBase;
 import com.intellij.execution.configurations.RunProfileState;
 import com.intellij.execution.executors.DefaultRunExecutor;
 import com.intellij.execution.process.ProcessHandler;
+import com.intellij.execution.process.ProcessOutputType;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.execution.testframework.AbstractTestProxy;
 import com.intellij.execution.testframework.sm.SMTestRunnerConnectionUtil;
@@ -295,6 +296,13 @@ public class UiContentDescriptor
         @Override
         public OutputStream getProcessInput() {
             return null;
+        }
+
+        public void log(String message) {
+            notifyTextAvailable(message + "\n", ProcessOutputType.STDOUT);
+        }
+        public void error(String message) {
+            notifyTextAvailable(message + "\n", ProcessOutputType.STDERR);
         }
     }
 }

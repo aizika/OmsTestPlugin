@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.intellij.execution.process.ProcessHandler;
-import com.intellij.execution.process.ProcessOutputTypes;
 import com.intellij.openapi.application.ApplicationManager;
 
 /**
@@ -39,7 +37,7 @@ public class TestResultPresenter {
         });
     }
 
-    private void displayTestSuiteResult(TestSuiteResult suite, ProcessHandler processHandler) {
+    private void displayTestSuiteResult(TestSuiteResult suite, UiContentDescriptor.UiProcessHandler processHandler) {
         Map<String, List<TestMethodResult>> grouped = suite.results().stream()
             .collect(Collectors.groupingBy(TestMethodResult::className));
 
@@ -49,23 +47,21 @@ public class TestResultPresenter {
             String suiteName = className.substring(className.lastIndexOf('.') + 1);
             String location = "java:" + className;
 
-            processHandler.notifyTextAvailable(
-                "##teamcity[testSuiteStarted name='" + suiteName + "' locationHint='" + location + "']\n",
-                ProcessOutputTypes.STDOUT
-                                              );
+            processHandler.log(
+                "##teamcity[testSuiteStarted name='" + suiteName + "' locationHint='" + location + "']\n"
+                              );
 
             Map<String, TestMethodResult> resultMap = results.stream()
                 .collect(Collectors.toMap(TestMethodResult::name, r -> r));
             displayResults(resultMap, processHandler);
 
-            processHandler.notifyTextAvailable(
-                "##teamcity[testSuiteFinished name='" + suiteName + "']\n",
-                ProcessOutputTypes.STDOUT
-                                              );
+            processHandler.log(
+                "##teamcity[testSuiteFinished name='" + suiteName + "']\n"
+                              );
         }
     }
 
-    private void displayResults(Map<String, TestMethodResult> results, ProcessHandler processHandler) {
+    private void displayResults(Map<String, TestMethodResult> results, UiContentDescriptor.UiProcessHandler processHandler) {
         results.entrySet().stream()
             .sorted(Map.Entry.comparingByKey())
             .map(Map.Entry::getValue)
@@ -73,48 +69,44 @@ public class TestResultPresenter {
                 String escapedName = escapeTc(result.name());
                 String strippedBracketsName = result.name().replaceAll("\\(.*?\\)|\\[.*?]", "");
                 String location = "java:" + result.className() + "#" + strippedBracketsName;
-                processHandler.notifyTextAvailable(
+                processHandler.log(
                     "##teamcity[testStarted name='" + escapedName + "' captureStandardOutput='true' locationHint='"
-                        + location + "']\n",
-                    ProcessOutputTypes.STDOUT);
+                        + location + "']\n"
+                                  );
 
                 switch (result.status()) {
                 case FAILED:
-                    processHandler.notifyTextAvailable(
+                    processHandler.log(
                         String.format("##teamcity[testFailed name='%s' message='%s' details='%s']\n",
                             escapedName,
                             escapeTc(defaultIfNull(result.failureMessage(), "Failed")),
-                            escapeTc(defaultIfNull(result.failureDetails(), ""))),
-                        ProcessOutputTypes.STDOUT
-                                                      );
+                            escapeTc(defaultIfNull(result.failureDetails(), "")))
+                                      );
                     break;
                 case ERROR:
-                    processHandler.notifyTextAvailable(
+                    processHandler.log(
                         String.format("##teamcity[testFailed name='%s' message='%s' details='%s']\n",
                             escapedName,
                             escapeTc(defaultIfNull(result.errorMessage(), "Error")),
-                            escapeTc(defaultIfNull(result.errorDetails(), ""))),
-                        ProcessOutputTypes.STDOUT
-                                                      );
+                            escapeTc(defaultIfNull(result.errorDetails(), "")))
+                                      );
                     break;
                 case SKIPPED:
-                    processHandler.notifyTextAvailable(
+                    processHandler.log(
                         String.format("##teamcity[testIgnored name='%s' message='%s']\n",
                             escapedName,
-                            escapeTc(defaultIfNull(result.skippedMessage(), "Skipped"))),
-                        ProcessOutputTypes.STDOUT
-                                                      );
+                            escapeTc(defaultIfNull(result.skippedMessage(), "Skipped")))
+                                      );
                     break;
                 default:
                     break;
                 }
 
-                processHandler.notifyTextAvailable(
+                processHandler.log(
                     String.format("##teamcity[testFinished name='%s' duration='%s']\n",
                         escapedName,
-                        result.timeInMillisStr()),
-                    ProcessOutputTypes.STDOUT
-                                                  );
+                        result.timeInMillisStr())
+                                  );
             });
     }
 

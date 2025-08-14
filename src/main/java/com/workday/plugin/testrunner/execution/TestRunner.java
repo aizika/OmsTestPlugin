@@ -6,11 +6,11 @@ import java.io.StringWriter;
 import org.jetbrains.annotations.NotNull;
 
 import com.intellij.execution.executors.DefaultRunExecutor;
-import com.intellij.execution.process.ProcessOutputTypes;
 import com.intellij.execution.ui.RunContentManager;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 
+import com.workday.plugin.testrunner.common.SshProbe;
 import com.workday.plugin.testrunner.ui.TestResultPresenter;
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 
@@ -44,16 +44,25 @@ public class TestRunner {
         runStrategy.setProcessHandler(processHandler);
 
         try {
-            processHandler.notifyTextAvailable("Running test on " + host + "\n", ProcessOutputTypes.STDOUT);
+            processHandler.log("Verifying OMS tenant on host: " + host);
+            final SshProbe.Result probe = runStrategy.getProbe(host);
+            if (probe.exitCode != 0) {
+                processHandler.error("Host " + host + " is not reachable: " + probe.reason);
+                descriptor.getUiProcessHandler().destroyProcess();
+                RunContentManager.getInstance(project)
+                    .removeRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor);
+                return;
+            }
+            runStrategy.verifyOms();
 
             final int jmxPort = runStrategy.getOmsJmxPort();
+            processHandler.log("OMS JMX port: " + jmxPort);
+            processHandler.log("Deleting old result files");
             runStrategy.deleteTempFiles();
-            runStrategy.verifyOms();
             new TestRunner(runStrategy, jmxPort, jmxParams).runTests(processHandler);
         }
         catch (Exception ex) {
-            processHandler.notifyTextAvailable(
-                "An error occurred: " + ex.getMessage() + "\n", ProcessOutputTypes.STDERR);
+            processHandler.error("An error occurred: " + ex.getMessage());
             descriptor.getUiProcessHandler().destroyProcess();
             RunContentManager.getInstance(project)
                 .removeRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor);
@@ -64,7 +73,6 @@ public class TestRunner {
         this.handler = handler;
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
-                log("Running tests");
                 //   JmxTestExecutor supposed to work always, but sometimes it fails to create XML log files.
                 //  To deal with this, we use a BypassTestExecutor that runs the JMX command directly on the remote server
                 // TODO: Investigate and remove this workaround when JMXTestExecutor is fixed
@@ -79,7 +87,7 @@ public class TestRunner {
                 new TestResultPresenter().displayParsedResults(handler);
             }
             catch (Exception ex) {
-                logError("❌ Test run failed: " + ex.getMessage() + "\n");
+                logError("❌ Test run failed: " + ex.getMessage());
                 StringWriter sw = new StringWriter();
                 ex.printStackTrace(new PrintWriter(sw));
                 final String string = sw.toString();
@@ -90,10 +98,10 @@ public class TestRunner {
     }
 
     private void logError(final String string) {
-        this.handler.notifyTextAvailable(string, ProcessOutputTypes.STDERR);
+        this.handler.error(string);
     }
 
     private void log(final String text) {
-        this.handler.notifyTextAvailable(text + "\n", ProcessOutputTypes.STDOUT);
+        this.handler.log(text + "\n");
     }
 }

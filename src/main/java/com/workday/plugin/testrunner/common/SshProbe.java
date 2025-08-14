@@ -4,6 +4,12 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Locale;
 
+/**
+ * Utility class to probe SSH reachability to a given host.
+ *
+ * @author alexander.aizikivsky
+ * @since Aug-2025
+ */
 public final class SshProbe {
 
     public static final class Result {
@@ -12,7 +18,7 @@ public final class SshProbe {
         public final int     exitCode;    // ssh exit code
         public final String  stderr;      // raw stderr (for logs)
 
-        Result(boolean reachable, String reason, int exitCode, String stderr, final String host) {
+        public Result(boolean reachable, String reason, int exitCode, String stderr, final String host) {
             this.reachable = reachable;
             this.reason = reason;
             this.exitCode = exitCode;

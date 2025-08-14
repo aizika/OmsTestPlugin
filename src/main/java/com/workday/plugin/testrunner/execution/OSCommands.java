@@ -3,8 +3,6 @@ package com.workday.plugin.testrunner.execution;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-import com.intellij.execution.process.ProcessOutputTypes;
-
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 
 /**
@@ -36,7 +34,7 @@ public class OSCommands {
     }
 
     private void log(final String cmd) {
-        this.processHandler.notifyTextAvailable(cmd + "\n", ProcessOutputTypes.STDOUT);
+        this.processHandler.log(cmd);
     }
 
     public void deleteRemoteFile(final String file) {

@@ -8,10 +8,44 @@ package com.workday.plugin.testrunner.common;
  */
 public class LastTestStorage {
 
+    private static boolean isStored = false;
+
+    public static boolean isLastTestStored() {
+        return isStored;
+    }
+
+    public static void setLastTestStorage(final String host,
+                                          final boolean isRemote,
+                                          final String runTabName,
+                                          final String[] jmxParameters) {
+        if (isRemote) {
+            setHost(host);
+        }
+        setRunTabName(runTabName);
+        setJmxParameters(jmxParameters);
+        if (isRemote) {
+            setRemote();
+        }
+        else {
+            setLocal();
+        }
+        setBasePath(Locations.getBasePath());
+        isStored = true;
+    }
+
+    public static boolean isRemote() {
+        return environment == Environment.REMOTE;
+    }
+
+    enum Environment {
+        LOCAL,
+        REMOTE
+    }
+
     private static String runTabName;
     private static String host;
     private static String[] jmxParameters;
-    private static boolean isRemote;
+    private static Environment environment;
 
     public static String getBasePath() {
         return basePath;
@@ -39,16 +73,16 @@ public class LastTestStorage {
         LastTestStorage.jmxParameters = jmxParameters;
     }
 
-    public static void setIsRemote(final boolean isRemote) {
-        LastTestStorage.isRemote = isRemote;
+    public static void setRemote() {
+        LastTestStorage.environment = Environment.REMOTE;
+    }
+
+    public static void setLocal() {
+        LastTestStorage.environment = Environment.LOCAL;
     }
 
     public static String[] getJmxParameters() {
         return jmxParameters;
-    }
-
-    public static boolean getIsRemote() {
-        return isRemote;
     }
 
     public static void setBasePath(final String basePath) {

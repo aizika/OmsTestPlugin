@@ -1,13 +1,17 @@
 package com.workday.plugin.testrunner.actions;
 
 import static com.intellij.icons.AllIcons.RunConfigurations.TestState.Run;
-import static com.workday.plugin.testrunner.common.Locations.*;
+import static com.workday.plugin.testrunner.actions.ReRunLastTestAction.showBalloon;
+import static com.workday.plugin.testrunner.common.Locations.LOCALHOST;
+import static com.workday.plugin.testrunner.common.Locations.SUV_RESULTS_FILE;
+import static com.workday.plugin.testrunner.common.Locations.TEST_RESULTS_FOLDER_SUV_DOCKER;
+import static com.workday.plugin.testrunner.common.Locations.getBasePath;
+import static com.workday.plugin.testrunner.common.Locations.getLocalResultFile;
 
 import org.jetbrains.annotations.NotNull;
 
-import com.intellij.execution.executors.DefaultRunExecutor;
 import com.intellij.execution.lineMarker.RunLineMarkerContributor;
-import com.intellij.execution.ui.RunContentManager;
+import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
@@ -23,8 +27,8 @@ import com.workday.plugin.testrunner.common.Locations;
 import com.workday.plugin.testrunner.execution.LocalRunStrategy;
 import com.workday.plugin.testrunner.execution.OSCommands;
 import com.workday.plugin.testrunner.execution.ParamBuilder;
-import com.workday.plugin.testrunner.execution.RunStrategy;
 import com.workday.plugin.testrunner.execution.RemoteRunStrategy;
+import com.workday.plugin.testrunner.execution.RunStrategy;
 import com.workday.plugin.testrunner.execution.TestRunner;
 import com.workday.plugin.testrunner.target.TestTargetExtractor;
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
@@ -105,14 +109,6 @@ public class GutterMarkerContributor
         return new Info(Run, element -> "Run OMS Test Class", runLocal, runRemote);
     }
 
-    protected String getHost() {
-        HostPromptDialog dialog = new HostPromptDialog();
-        if (dialog.showAndGet()) {
-            return dialog.getHost();
-        }
-        return "";
-    }
-
     private @NotNull AnAction createAction(
         final String runTabName, final Project project, final String[] jmxParameters, final boolean isRemote) {
 
@@ -123,8 +119,14 @@ public class GutterMarkerContributor
                 final RunStrategy runStrategy;
                 String host;
                 if (isRemote) {
-                    host = getHost();
+                    HostPromptDialog dialog = new HostPromptDialog();
+                    if (!dialog.showAndGet()) {
+                        // canceled by user
+                        return;
+                    }
+                    host = dialog.getHost();
                     if (host.isBlank()) {
+                        showBalloon(project,"No valid host specified", NotificationType.ERROR);
                         return;
                     }
                     runStrategy = new RemoteRunStrategy(new OSCommands(host), host, getLocalResultFile(),
@@ -135,14 +137,7 @@ public class GutterMarkerContributor
                     runStrategy = new LocalRunStrategy(new OSCommands(host), getLocalResultFile(), getBasePath());
                 }
                 final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, runTabName);
-                if (isRemote) {
-                    LastTestStorage.setHost(host);
-                }
-                LastTestStorage.setRunTabName(runTabName);
-                LastTestStorage.setJmxParameters(jmxParameters);
-                LastTestStorage.setIsRemote(isRemote);
-                LastTestStorage.setBasePath(getBasePath());
-
+                LastTestStorage.setLastTestStorage(host, isRemote, runTabName, jmxParameters);
                 TestRunner.runTest(project, host, jmxParameters, runStrategy, uiDescriptor);
             }
         };
@@ -162,4 +157,5 @@ public class GutterMarkerContributor
             ? classFqName + "@" + method.getName()
             : classFqName + "@" + method.getName() + "(" + paramTypes + ")";
     }
+
 }

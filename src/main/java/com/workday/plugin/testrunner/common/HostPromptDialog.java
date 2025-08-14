@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import com.intellij.openapi.ui.DialogWrapper;
@@ -65,7 +66,7 @@ public class HostPromptDialog
 
     public String getHost() {
         Pattern pattern = Pattern.compile("i-[a-f0-9]{17}");
-        Matcher matcher = pattern.matcher(hostTextField.getText().trim());
+        Matcher matcher = pattern.matcher(getRawHost());
         if (matcher.find()) {
             String id = matcher.group();
             return id + ".workdaysuv.com";
@@ -73,13 +74,19 @@ public class HostPromptDialog
         return "";
     }
 
+    private @NotNull String getRawHost() {
+        return hostTextField.getText().trim();
+    }
+
     @Override
     protected void doOKAction() {
-        LastTestStorage.setHost(getHost());
+//        LastTestStorage.setHost(getHost());
         super.doOKAction();
     }
 
     private void validateInput() {
-        setOKActionEnabled(!hostTextField.getText().trim().isEmpty());
+        Pattern pattern = Pattern.compile("i-[a-f0-9]{17}");
+        Matcher matcher = pattern.matcher(hostTextField.getText().trim());
+        setOKActionEnabled(matcher.find());
     }
 }

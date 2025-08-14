@@ -1,5 +1,8 @@
 package com.workday.plugin.testrunner.execution;
 
+import org.jetbrains.annotations.NotNull;
+
+import com.workday.plugin.testrunner.common.SshProbe;
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 
 /**
@@ -18,6 +21,7 @@ public interface RunStrategy {
     void verifyOms();
     void maybeStartPortForwarding(final int jmxPort);
     boolean bypassJmxProxy();
+    SshProbe.@NotNull Result getProbe(final String host);
 
     void setProcessHandler(UiContentDescriptor.UiProcessHandler processHandler);
 }

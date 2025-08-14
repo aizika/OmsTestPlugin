@@ -8,6 +8,8 @@ import static com.workday.plugin.testrunner.common.Locations.getLocalResultFile;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.intellij.notification.NotificationGroupManager;
+import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
@@ -15,6 +17,7 @@ import com.intellij.openapi.util.IconLoader;
 
 import com.workday.plugin.testrunner.common.LastTestStorage;
 import com.workday.plugin.testrunner.common.Locations;
+import com.workday.plugin.testrunner.common.SshProbe;
 import com.workday.plugin.testrunner.execution.LocalRunStrategy;
 import com.workday.plugin.testrunner.execution.OSCommands;
 import com.workday.plugin.testrunner.execution.RemoteRunStrategy;
@@ -46,17 +49,30 @@ public class ReRunLastTestAction
             return;
         }
 
+        if (!LastTestStorage.isLastTestStored()) {
+            showBalloon(project, "No last test stored", NotificationType.ERROR);
+            return;
+        }
         final String basePath = LastTestStorage.getBasePath();
-        final boolean isRemote = LastTestStorage.getIsRemote();
+        final boolean isRemote = LastTestStorage.isRemote();
         String[] jmxParameters = LastTestStorage.getJmxParameters();
         String runTabName = LastTestStorage.getRunTabName();
         Locations.setBasePath(basePath);
-        final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, runTabName);
 
         String host;
         RunStrategy runStrategy;
         if (isRemote) {
             host = LastTestStorage.getHost();
+            if (host == null || host.isBlank()) {
+                showBalloon(project, "Host is not specified", NotificationType.ERROR);
+                return;
+            }
+            final SshProbe.Result probe = SshProbe.probe(host);
+
+            if (probe.exitCode != 0) {
+                showBalloon(project, "Cannot use host: " + host +": " + probe.reason, NotificationType.ERROR);
+                return;
+            }
             runStrategy = new RemoteRunStrategy(new OSCommands(host), host, getLocalResultFile(),
                 SUV_RESULTS_FILE, TEST_RESULTS_FOLDER_SUV_DOCKER);
         }
@@ -65,9 +81,7 @@ public class ReRunLastTestAction
             runStrategy = new LocalRunStrategy(new OSCommands(host), getLocalResultFile(), getBasePath());
         }
 
-        if (host == null || host.isBlank()) {
-            return;
-        }
+        final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, runTabName);
         if (jmxParameters == null || jmxParameters.length == 0) {
             return;
         }
@@ -75,4 +89,10 @@ public class ReRunLastTestAction
         TestRunner.runTest(project, host, jmxParameters, runStrategy, uiDescriptor);
     }
 
+    public static void showBalloon(Project project, String message, NotificationType type) {
+        NotificationGroupManager.getInstance()
+            .getNotificationGroup("OmsTest Notifications") // must match the ID you registered in plugin.xml
+            .createNotification(message, NotificationType.ERROR)
+            .notify(project);
+    }
 }

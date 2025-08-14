@@ -5,7 +5,6 @@ import static java.lang.String.join;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-import com.intellij.execution.process.ProcessOutputTypes;
 import com.intellij.openapi.util.NlsContexts;
 
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
@@ -57,7 +56,7 @@ public final class BypassTestExecutor {
 
     private  void runRemoteCommand(String command,
                                    @NlsContexts.ProgressText String title) {
-        this.handler.notifyTextAvailable("\n> " + title + "\n", ProcessOutputTypes.STDOUT);
+        this.handler.log(title);
         try {
             Process process = new ProcessBuilder("/bin/sh", "-c", command)
                 .redirectErrorStream(true)
@@ -66,16 +65,15 @@ public final class BypassTestExecutor {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = br.readLine()) != null) {
-                    this.handler.notifyTextAvailable(line + "\n", ProcessOutputTypes.STDOUT);
+                    this.handler.log(line);
                 }
             }
 
             int exitCode = process.waitFor();
-            this.handler.notifyTextAvailable("Process exited with code " + exitCode + "\n",
-                ProcessOutputTypes.STDOUT);
+            this.handler.log("Process exited with code " + exitCode);
         }
         catch (Exception e) {
-            this.handler.notifyTextAvailable("Error: " + e.getMessage() + "\n", ProcessOutputTypes.STDERR);
+            this.handler.error(e.getMessage());
         }
     }
 }

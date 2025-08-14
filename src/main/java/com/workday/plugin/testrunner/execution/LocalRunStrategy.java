@@ -2,8 +2,9 @@ package com.workday.plugin.testrunner.execution;
 
 import static com.workday.plugin.testrunner.common.Locations.LOCALHOST;
 
-import com.intellij.execution.process.ProcessOutputType;
+import org.jetbrains.annotations.NotNull;
 
+import com.workday.plugin.testrunner.common.SshProbe;
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 
 /**
@@ -59,7 +60,7 @@ public class LocalRunStrategy
     }
 
     private void log(final String error) {
-        this.processHandler.notifyTextAvailable(error, ProcessOutputType.STDOUT);
+        this.processHandler.log(error);
     }
 
     @Override
@@ -75,6 +76,11 @@ public class LocalRunStrategy
     @Override
     public boolean bypassJmxProxy() {
         return false;
+    }
+
+    @Override
+    public SshProbe.@NotNull Result getProbe(final String host) {
+        return new SshProbe.Result(true, "", 0, "", LOCALHOST);
     }
 
     @Override

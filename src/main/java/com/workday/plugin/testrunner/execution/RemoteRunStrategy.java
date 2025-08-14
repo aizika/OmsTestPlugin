@@ -1,7 +1,8 @@
 package com.workday.plugin.testrunner.execution;
 
-import com.intellij.execution.process.ProcessOutputTypes;
+import org.jetbrains.annotations.NotNull;
 
+import com.workday.plugin.testrunner.common.SshProbe;
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 
 /**
@@ -32,6 +33,10 @@ public class RemoteRunStrategy
         this.jmxPath = jmxPath;
     }
 
+    public SshProbe.@NotNull Result getProbe(final String host) {
+        return SshProbe.probe(host);
+    }
+
     @Override
     public String getJmxResultFolder() {
         return jmxPath;
@@ -49,14 +54,12 @@ public class RemoteRunStrategy
 
     @Override
     public void deleteTempFiles() {
-        log("Deleting result files: " + localResultFile + ", " + remotePath);
         osCommands.deleteLocalFile(localResultFile);
         osCommands.deleteRemoteFile(remotePath);
     }
 
     @Override
     public void copyTestResults() {
-        log("Copying result file from " + remotePath + " to " + localResultFile);
         osCommands.copyFileFromRemote(remotePath, localResultFile);
     }
 
@@ -64,22 +67,18 @@ public class RemoteRunStrategy
     public void verifyOms() {
         String curlCmd = "https://" + host + "/ots/-/tenantoperation/-list";
         String output = osCommands.executeRemoteCommand("curl " + curlCmd);
-        log(output);
         if (!output.contains("\noms: Ready")) {
             final String errorMessage = "Error: Installation does not support oms tenant";
-            log(errorMessage);
+            this.processHandler.error(output);
+            this.processHandler.error(errorMessage);
             throw new RuntimeException(errorMessage);
         }
-        log("Oms tenant found.");
-    }
-
-    private void log(final String errorMessage) {
-        this.processHandler.notifyTextAvailable(errorMessage + "\n", ProcessOutputTypes.STDOUT);
+        this.processHandler.log("Oms tenant found.");
     }
 
     @Override
     public void maybeStartPortForwarding(final int jmxPort) {
-        log("Starting port forwarding for JMX on port " + jmxPort);
+        this.processHandler.log("Starting port forwarding for JMX on port " + jmxPort);
         osCommands.startPortForwarding(jmxPort);
     }
 

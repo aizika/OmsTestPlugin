@@ -13,8 +13,6 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
-import com.intellij.execution.process.ProcessOutputTypes;
-
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 
 /**
@@ -72,7 +70,7 @@ public class JmxTestExecutor {
     }
 
     private void log(final String text) {
-        this.handler.notifyTextAvailable(text + "\n", ProcessOutputTypes.STDOUT);
+        this.handler.log(text);
     }
 
     public interface JUnitTestingMXBean {
