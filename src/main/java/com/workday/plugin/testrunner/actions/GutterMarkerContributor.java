@@ -14,6 +14,7 @@ import com.intellij.execution.lineMarker.RunLineMarkerContributor;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
@@ -117,7 +118,7 @@ public class GutterMarkerContributor
             public void actionPerformed(@NotNull AnActionEvent event) {
 
                 final RunStrategy runStrategy;
-                String host;
+                final String host;
                 if (isRemote) {
                     HostPromptDialog dialog = new HostPromptDialog();
                     if (!dialog.showAndGet()) {
@@ -126,7 +127,7 @@ public class GutterMarkerContributor
                     }
                     host = dialog.getHost();
                     if (host.isBlank()) {
-                        showBalloon(project,"No valid host specified", NotificationType.ERROR);
+                        showBalloon(project, "No valid host specified", NotificationType.ERROR);
                         return;
                     }
                     runStrategy = new RemoteRunStrategy(new OSCommands(host), host, getLocalResultFile(),
@@ -137,8 +138,10 @@ public class GutterMarkerContributor
                     runStrategy = new LocalRunStrategy(new OSCommands(host), getLocalResultFile(), getBasePath());
                 }
                 final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, runTabName);
-                LastTestStorage.setLastTestStorage(host, isRemote, runTabName, jmxParameters);
-                TestRunner.runTest(project, host, jmxParameters, runStrategy, uiDescriptor);
+                ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                    LastTestStorage.setLastTestStorage(host, isRemote, runTabName, jmxParameters);
+                    TestRunner.runTest(project, host, jmxParameters, runStrategy, uiDescriptor);
+                });
             }
         };
     }

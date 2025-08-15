@@ -12,6 +12,7 @@ import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.IconLoader;
 
@@ -58,35 +59,38 @@ public class ReRunLastTestAction
         String[] jmxParameters = LastTestStorage.getJmxParameters();
         String runTabName = LastTestStorage.getRunTabName();
         Locations.setBasePath(basePath);
-
-        String host;
-        RunStrategy runStrategy;
-        if (isRemote) {
-            host = LastTestStorage.getHost();
-            if (host == null || host.isBlank()) {
-                showBalloon(project, "Host is not specified", NotificationType.ERROR);
-                return;
-            }
-            final SshProbe.Result probe = SshProbe.probe(host);
-
-            if (probe.exitCode != 0) {
-                showBalloon(project, "Cannot use host: " + host +": " + probe.reason, NotificationType.ERROR);
-                return;
-            }
-            runStrategy = new RemoteRunStrategy(new OSCommands(host), host, getLocalResultFile(),
-                SUV_RESULTS_FILE, TEST_RESULTS_FOLDER_SUV_DOCKER);
-        }
-        else {
-            host = LOCALHOST;
-            runStrategy = new LocalRunStrategy(new OSCommands(host), getLocalResultFile(), getBasePath());
-        }
-
         final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, runTabName);
-        if (jmxParameters == null || jmxParameters.length == 0) {
-            return;
-        }
 
-        TestRunner.runTest(project, host, jmxParameters, runStrategy, uiDescriptor);
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+
+
+            String host;
+            RunStrategy runStrategy;
+            if (isRemote) {
+                host = LastTestStorage.getHost();
+                if (host == null || host.isBlank()) {
+                    showBalloon(project, "Host is not specified", NotificationType.ERROR);
+                    return;
+                }
+                final SshProbe.Result probe = SshProbe.probe(host);
+
+                if (probe.exitCode != 0) {
+                    showBalloon(project, "Cannot use host: " + host + ": " + probe.reason, NotificationType.ERROR);
+                    return;
+                }
+                runStrategy = new RemoteRunStrategy(new OSCommands(host), host, getLocalResultFile(),
+                    SUV_RESULTS_FILE, TEST_RESULTS_FOLDER_SUV_DOCKER);
+            }
+            else {
+                host = LOCALHOST;
+                runStrategy = new LocalRunStrategy(new OSCommands(host), getLocalResultFile(), getBasePath());
+            }
+
+            if (jmxParameters == null || jmxParameters.length == 0) {
+                return;
+            }
+            TestRunner.runTest(project, host, jmxParameters, runStrategy, uiDescriptor);
+        });
     }
 
     public static void showBalloon(Project project, String message, NotificationType type) {

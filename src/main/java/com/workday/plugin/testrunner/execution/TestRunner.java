@@ -102,6 +102,6 @@ public class TestRunner {
     }
 
     private void log(final String text) {
-        this.handler.log(text + "\n");
+        this.handler.log(text);
     }
 }

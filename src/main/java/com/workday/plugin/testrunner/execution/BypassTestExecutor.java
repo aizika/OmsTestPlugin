@@ -36,12 +36,13 @@ public final class BypassTestExecutor {
         final String jmxparams = join(" ", jmxParams) + " " + strategy.getJmxResultFolder();
 
         String jmxInput = String.join("\n",
-            "open localhost:" + this.jmxPort,
-            "domain com.workday.oms",
-            "bean name=JunitTestListener",
-            "run executeTestSuite " + jmxparams).replace("\n", "\\n");
+            "open localhost:" + this.jmxPort + "\n",
+            "domain com.workday.oms\n",
+            "bean name=JunitTestListener\n",
+            "run executeTestSuite " + jmxparams + "\n").replace("\n", "\\n");
 
         String sshCommand = buildSshCommand(jmxInput);
+        this.handler.log("Running SSH command: \n" + sshCommand);
         runRemoteCommand(sshCommand, "Running test on " + strategy.getHost());
     }
 
