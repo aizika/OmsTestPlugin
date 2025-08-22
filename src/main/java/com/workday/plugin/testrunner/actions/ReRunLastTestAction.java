@@ -64,8 +64,8 @@ public class ReRunLastTestAction
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
 
 
-            String host;
-            RunStrategy runStrategy;
+            final String host;
+            final RunStrategy runStrategy;
             if (isRemote) {
                 host = LastTestStorage.getHost();
                 if (host == null || host.isBlank()) {

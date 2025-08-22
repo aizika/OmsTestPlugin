@@ -38,7 +38,6 @@ import com.intellij.pom.Navigatable;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMethod;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.util.ui.UIUtil;
 
@@ -92,51 +91,56 @@ public class UiContentDescriptor
             return;
         }
 
-        tree.addTreeSelectionListener(event -> {
-            Object lastPathComponent = event.getPath().getLastPathComponent();
-            if (!(lastPathComponent instanceof DefaultMutableTreeNode selectedNode)) {
-                return;
-            }
-
-            Object userObject = selectedNode.getUserObject();
-            if (!(userObject instanceof SMTRunnerNodeDescriptor descriptor)) {
-                return;
-            }
-
-            AbstractTestProxy proxy = descriptor.getElement();
-            if (proxy == null) {
-                return;
-            }
-
-            String locationUrl = proxy.getLocationUrl();
-            if (locationUrl == null || !locationUrl.startsWith("java:")) {
-                return;
-            }
-
-            String path = locationUrl.substring("java:".length());
-            String[] parts = path.split("#");
-            String classFqName = parts[0];
-            String methodName = parts.length > 1 ? parts[1] : null;
-
-            JavaPsiFacade psiFacade = JavaPsiFacade.getInstance(project);
-            PsiClass psiClass = psiFacade.findClass(classFqName, GlobalSearchScope.allScope(project));
-            if (psiClass == null) {
-                return;
-            }
-
-            PsiElement psi;
-            if (methodName != null) {
-                PsiMethod[] methods = psiClass.findMethodsByName(methodName, false);
-                psi = methods.length > 0 ? methods[0] : psiClass;
-            }
-            else {
-                psi = psiClass;
-            }
-
-            if (psi instanceof Navigatable navigatable && navigatable.canNavigate()) {
-                navigatable.navigate(true);
+        tree.addTreeSelectionListener(event -> navigateFromSelectedNode(tree, project));
+        tree.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getButton() == java.awt.event.MouseEvent.BUTTON1) {
+                    int row = tree.getRowForLocation(e.getX(), e.getY());
+                    javax.swing.tree.TreePath path = (row >= 0) ? tree.getPathForRow(row) : null;
+                    if (path != null && tree.isPathSelected(path)) {
+                        navigateFromSelectedNode(tree, project);
+                    }
+                }
             }
         });
+    }
+
+    private static void navigateFromSelectedNode(JTree tree, Project project) {
+        Object last = tree.getLastSelectedPathComponent();
+        if (!(last instanceof DefaultMutableTreeNode selectedNode)) {
+            return;
+        }
+
+        Object userObject = selectedNode.getUserObject();
+        if (!(userObject instanceof SMTRunnerNodeDescriptor descriptor)) {
+            return;
+        }
+
+        AbstractTestProxy proxy = descriptor.getElement();
+        if (proxy == null) {
+            return;
+        }
+
+        String locationUrl = proxy.getLocationUrl();
+        if (locationUrl == null || !locationUrl.startsWith("java:")) {
+            return;
+        }
+
+        String[] parts = locationUrl.substring("java:".length()).split("#");
+        PsiClass psiClass = JavaPsiFacade.getInstance(project)
+            .findClass(parts[0], GlobalSearchScope.allScope(project));
+        if (psiClass == null) {
+            return;
+        }
+
+        PsiElement target = (parts.length > 1)
+            ? psiClass.findMethodsByName(parts[1], false)[0]
+            : psiClass;
+
+        if (target instanceof Navigatable navigatable && navigatable.canNavigate()) {
+            navigatable.navigate(true);
+        }
     }
 
     public static ConsoleView createConsoleView(Project project, ProcessHandler handler) {
@@ -301,6 +305,7 @@ public class UiContentDescriptor
         public void log(String message) {
             notifyTextAvailable(message + "\n", ProcessOutputType.STDOUT);
         }
+
         public void error(String message) {
             notifyTextAvailable(message + "\n", ProcessOutputType.STDERR);
         }
