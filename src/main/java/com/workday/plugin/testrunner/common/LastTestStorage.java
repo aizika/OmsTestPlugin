@@ -1,13 +1,21 @@
 package com.workday.plugin.testrunner.common;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import com.intellij.ide.util.PropertiesComponent;
 
 /**
  * Stores the last executed test parameters.
  */
 public class LastTestStorage {
+//    private static final String KEY_LAST_HOST = "oms.lastHost";
+    private static final String KEY_HOST_HISTORY = "oms.hostHistory"; // CSV
+    private static final int MAX_HISTORY = 10;
 
     private static boolean isStored = false;
 
@@ -42,12 +50,14 @@ public class LastTestStorage {
         setJmxParameters(jmxParameters);
         if (isRemote) {
             setRemote();
-        } else {
+        }
+        else {
             setLocal();
         }
         setBasePath(Locations.getBasePath());
         isStored = true;
-            entriesByTabKey.put(runTabName, getLastTestEntry());
+
+        entriesByTabKey.put(runTabName, getLastTestEntry());
     }
 
     public static boolean isRemote() {
@@ -127,7 +137,9 @@ public class LastTestStorage {
      * Creates a snapshot of the current stored test parameters.
      */
     public static LastTestEntry getLastTestEntry() {
-        if (!isStored) return null;
+        if (!isStored) {
+            return null;
+        }
         return new LastTestEntry(
             host,
             isRemote(),
@@ -145,7 +157,24 @@ public class LastTestStorage {
      * @return the corresponding LastTestEntry or null if not found
      */
     public static LastTestEntry getLastEntry(String tabKey) {
-        if (tabKey == null) return null;
+        if (tabKey == null) {
+            return null;
+        }
         return entriesByTabKey.get(tabKey);
+    }
+
+    public static List<String> getRecentHosts() {
+        String csv = PropertiesComponent.getInstance().getValue(KEY_HOST_HISTORY, "");
+        if (csv.isBlank()) return List.of();
+        return new ArrayList<>(Arrays.asList(csv.split("\\s*,\\s*")));
+    }
+
+    public static void addRecentHost(String host) {
+        ArrayList<String> list = new ArrayList<>(getRecentHosts());
+        list.removeIf(h -> h.equalsIgnoreCase(host)); // dedupe
+        list.add(0, host);
+        if (list.size() > MAX_HISTORY) list.subList(MAX_HISTORY, list.size()).clear();
+        String csv = String.join(",", list);
+        PropertiesComponent.getInstance().setValue(KEY_HOST_HISTORY, csv);
     }
 }

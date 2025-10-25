@@ -1,6 +1,7 @@
 package com.workday.plugin.testrunner.common;
 
 import java.awt.*;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -11,51 +12,51 @@ import javax.swing.event.DocumentListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.DialogWrapper;
 
 /**
- *  Dialog to prompt the user for a remote host.
- * This dialog is used to enter the host for running tests on a remote server.
- * It validates the input and normalizes it to a specific format.
+ * Dialog to prompt the user for a remote host.
+ * Keeps history of recent hosts and validates input as EC2 instance IDs.
  *
  * @author alexander.aizikivsky
  * @since Jun-2025
  */
-public class HostPromptDialog
-    extends DialogWrapper {
+public class HostPromptDialog extends DialogWrapper {
 
     private final JPanel panel = new JPanel(new BorderLayout());
-    private final JTextField hostTextField = new JTextField();
+    private final ComboBox<String> hostCombo = new ComboBox<>();
 
     public HostPromptDialog() {
-        super(true); // use the current window as parent
+        super(true);
         setTitle("Enter Remote Host");
-        hostTextField.setColumns(30);
 
-        // Set initial value from LastTestStorage
-        hostTextField.setText(LastTestStorage.getHost() != null ? LastTestStorage.getHost() : "");
+        hostCombo.setEditable(true);
+        ((JTextField) hostCombo.getEditor().getEditorComponent()).setColumns(30);
+
+        // prime with history + last used (if any)
+        List<String> history = LastTestStorage.getRecentHosts();
+        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+        for (String h : history) model.addElement(h);
+        String last = LastTestStorage.getHost();
+        if (last != null && !last.isBlank() && model.getIndexOf(last) == -1) {
+            model.insertElementAt(last, 0);
+        }
+        hostCombo.setModel(model);
+        if (model.getSize() > 0) hostCombo.setSelectedIndex(0);
 
         panel.add(new JLabel("Host:"), BorderLayout.WEST);
-        panel.add(hostTextField, BorderLayout.CENTER);
+        panel.add(hostCombo, BorderLayout.CENTER);
 
-        init(); // must be called after panel setup
+        init();
 
-        validateInput();
-        hostTextField.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                validateInput();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                validateInput();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                validateInput();
-            }
+        // validation wiring for editable combo
+        JTextField editor = (JTextField) hostCombo.getEditor().getEditorComponent();
+        validateInput(editor.getText());
+        editor.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { validateInput(editor.getText()); }
+            @Override public void removeUpdate(DocumentEvent e) { validateInput(editor.getText()); }
+            @Override public void changedUpdate(DocumentEvent e) { validateInput(editor.getText()); }
         });
     }
 
@@ -65,6 +66,7 @@ public class HostPromptDialog
     }
 
     public String getHost() {
+        // keep your normalization to EC2 id + suffix
         Pattern pattern = Pattern.compile("i-[a-f0-9]{17}");
         Matcher matcher = pattern.matcher(getRawHost());
         if (matcher.find()) {
@@ -75,18 +77,23 @@ public class HostPromptDialog
     }
 
     private @NotNull String getRawHost() {
-        return hostTextField.getText().trim();
+        Object sel = hostCombo.getEditor().getItem();
+        return sel == null ? "" : sel.toString().trim();
     }
 
     @Override
     protected void doOKAction() {
-//        LastTestStorage.setHost(getHost());
+        String normalized = getHost();
+        if (!normalized.isBlank()) {
+            LastTestStorage.setHost(normalized);          // preserve existing behavior
+            LastTestStorage.addRecentHost(normalized);    // NEW: push into history
+        }
         super.doOKAction();
     }
 
-    private void validateInput() {
+    private void validateInput(String text) {
         Pattern pattern = Pattern.compile("i-[a-f0-9]{17}");
-        Matcher matcher = pattern.matcher(hostTextField.getText().trim());
+        Matcher matcher = pattern.matcher(text.trim());
         setOKActionEnabled(matcher.find());
     }
 }
