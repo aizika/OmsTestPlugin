@@ -69,6 +69,24 @@ Quickly re-run the most recently executed test — local or remote — with a si
 
 Shortcut (macOS): **⌃⌥⌘R** (Control + Option + Command + R)
 
+#### Tab-Dependent Reruns
+
+You can pin Run tabs and reopen them when needed.
+When you re-run a test from an existing Run tab, the plugin automatically restores that tab’s full context — including the last executed test, selected test runner (JMX or RemoteJ), and associated host.
+Multiple Run tabs can stay open simultaneously for different servers or configurations, and each tab preserves its own settings.
+If no Run tab is selected, the plugin will prompt you to create a new configuration.
+
+#### Stored Hosts & History
+
+Whenever you run a remote test, the plugin remembers the host used.
+The Host Prompt Dialog now includes an editable drop-down list where you can either 
+* Choose from previously used hosts or
+* Enter a new host manually (paste or type).
+
+The host history is stored locally using IntelliJ’s PropertiesComponent and persists across IDE restarts.
+The most recently used host is pre-selected next time you run a remote test.
+History is limited to the last 10 entries.
+
 ### 👀 Test Panel Overview
 The results of the tests run through the plugin appear in the standard **Run tool window**, using IntelliJ’s test UI infrastructure.
 The plugin attempts to mimic the native IntelliJ test runner experience as closely as possible.
