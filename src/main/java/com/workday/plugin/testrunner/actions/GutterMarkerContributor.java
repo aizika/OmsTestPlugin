@@ -11,7 +11,6 @@ import static com.workday.plugin.testrunner.common.Locations.getLocalResultFile;
 import org.jetbrains.annotations.NotNull;
 
 import com.intellij.execution.lineMarker.RunLineMarkerContributor;
-import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
@@ -86,8 +85,8 @@ public class GutterMarkerContributor
 
         String methodSignature = buildMethodSignature(classFqName, method);
         final String[] methodArgs = ParamBuilder.getMethodArgs(methodSignature);
-        AnAction runLocal = createAction("Run '" + method.getName() + "' on local OMS", project, methodArgs, false);
-        AnAction runRemote = createAction("Run '" + method.getName() + "' on SUV", project, methodArgs, true);
+        AnAction runLocal = createAction(method.getName(), project, methodArgs, false);
+        AnAction runRemote = createAction(method.getName(), project, methodArgs, true);
 
         return new Info(Run, element -> "Run OMS Test Method", runLocal, runRemote);
     }
@@ -104,21 +103,22 @@ public class GutterMarkerContributor
         }
 
         final String[] classArgs = ParamBuilder.getClassArgs(fqName);
-        AnAction runLocal = createAction("Run '" + clazz.getName() + "' on local OMS", project, classArgs, false);
-        AnAction runRemote = createAction("Run '" + clazz.getName() + "' on SUV", project, classArgs, true);
+        AnAction runLocal = createAction(clazz.getName(), project, classArgs, false);
+        AnAction runRemote = createAction(clazz.getName(), project, classArgs, true);
 
         return new Info(Run, element -> "Run OMS Test Class", runLocal, runRemote);
     }
 
     private @NotNull AnAction createAction(
-        final String runTabName, final Project project, final String[] jmxParameters, final boolean isRemote) {
+        final String testName, final Project project, final String[] jmxParameters, final boolean isRemote) {
 
-        return new AnAction(runTabName, null, Run) {
+        return new AnAction("Run " + testName + (isRemote ? " on SUV" : " locally"), null, Run) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent event) {
 
                 final RunStrategy runStrategy;
                 final String host;
+                final String runTabName;
                 if (isRemote) {
                     HostPromptDialog dialog = new HostPromptDialog();
                     if (!dialog.showAndGet()) {
@@ -127,14 +127,16 @@ public class GutterMarkerContributor
                     }
                     host = dialog.getHost();
                     if (host.isBlank()) {
-                        showBalloon(project, "No valid host specified", NotificationType.ERROR);
+                        showBalloon(project, "No valid host specified");
                         return;
                     }
+                    runTabName = testName + "@" + host.replaceFirst("\\.workdaysuv\\.com$", "");
                     runStrategy = new RemoteRunStrategy(new OSCommands(host), host, getLocalResultFile(),
                         SUV_RESULTS_FILE, TEST_RESULTS_FOLDER_SUV_DOCKER);
                 }
                 else {
                     host = LOCALHOST;
+                    runTabName = testName + "@local";
                     runStrategy = new LocalRunStrategy(new OSCommands(host), getLocalResultFile(), getBasePath());
                 }
                 final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, runTabName);
@@ -160,5 +162,4 @@ public class GutterMarkerContributor
             ? classFqName + "@" + method.getName()
             : classFqName + "@" + method.getName() + "(" + paramTypes + ")";
     }
-
 }
