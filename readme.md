@@ -10,7 +10,7 @@ It also includes a one-click option to re-run the last test.
 
 ---
 ## 🚀 Get the Plugin
-You can download the pre-built ZIP file:
+You can download the pre-built ZIP file 1:
 👉 [Download Plugin ZIP](https://github.com/aizika/OmsTestPlugin/releases/download/v2.2-beta/OmsTest-2.2-BETA.zip)
 
 or build it from source:
