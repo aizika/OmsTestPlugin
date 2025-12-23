@@ -11,7 +11,7 @@ It also includes a one-click option to re-run the last test.
 ---
 ## 🚀 Get the Plugin
 You can download the pre-built ZIP file:
-👉 [Download Plugin ZIP](https://github.com/aizika/OmsTestPlugin/releases/download/v2.1-beta/OmsTest-2.1-BETA.zip)
+👉 [Download Plugin ZIP](https://github.com/aizika/OmsTestPlugin/releases/download/v2.2-beta/OmsTest-2.1-BETA.zip)
 
 or build it from source:
 

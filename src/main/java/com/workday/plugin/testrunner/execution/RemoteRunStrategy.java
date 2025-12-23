@@ -65,7 +65,7 @@ public class RemoteRunStrategy
 
     @Override
     public void verifyOms() {
-        String curlCmd = "https://" + host + "/ots/-/tenantoperation/-list";
+        String curlCmd = "https://" + host + "/ors/-/tenantoperation/-list";
         String output = osCommands.executeRemoteCommand("curl " + curlCmd);
         if (!output.contains("\noms: Ready")) {
             final String errorMessage = "Error: Installation does not support oms tenant";

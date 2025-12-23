@@ -50,7 +50,7 @@ public final class BypassTestExecutor {
         // Note: escape the inner quotes for the remote shell
         return String.format(
             "ssh -o StrictHostKeyChecking=accept-new root@%s " +
-                "\"docker exec ots-17-17 mkdir -p /usr/local/workday-oms/logs/junit && " +
+                "\"docker exec ors2-17-17 mkdir -p /usr/local/workday-oms/logs/junit && " +
                 "echo -e \\\"%s\\\" | java -jar /usr/local/bin/jmxterm-1.0-SNAPSHOT-uber.jar\"",
             strategy.getHost(), jmxInput);
     }

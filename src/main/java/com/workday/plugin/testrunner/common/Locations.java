@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 public class Locations {
 
     public static final String TEST_RESULTS_FOLDER_SUV_DOCKER = "/usr/local/workday-oms/logs";
-    public static final String TEST_RESULTS_FOLDER_SUV = "/data/workdaydevqa/suv/suvots/logs";
+    public static final String TEST_RESULTS_FOLDER_SUV = "/data/workdaydevqa/suv/suvors2/logs";
     public static final String TEST_RESULTS_FILE = "TEST-junit-jupiter.xml";
     public static final String TEST_JUNIT_JUPITER_XML = "TEST-junit-jupiter.xml";
     public static final String LOCALHOST = "localhost";

@@ -50,7 +50,7 @@ public class LocalRunStrategy
 
     @Override
     public void verifyOms() {
-        String curlCmd = "http://localhost:12001/ots/-/tenantoperation/-list";
+        String curlCmd = "https://i-0e2f5c30070dce69d.workdaysuv.com/ors/-/tenantoperation/-list";
         String output = osCommands.executeLocalCommand("curl " + curlCmd);
         if (!output.contains("\noms: Ready")) {
             final String error = "Error: Installation does not support oms tenant, output = ";
