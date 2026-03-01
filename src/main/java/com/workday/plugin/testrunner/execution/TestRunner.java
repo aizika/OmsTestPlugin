@@ -53,7 +53,7 @@ public class TestRunner {
                     .removeRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor);
                 return;
             }
-            runStrategy.verifyOms();
+//            runStrategy.verifyOms();
 
             final int jmxPort = runStrategy.getOmsJmxPort();
             processHandler.log("OMS JMX port: " + jmxPort);

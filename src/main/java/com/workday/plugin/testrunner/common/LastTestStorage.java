@@ -36,7 +36,8 @@ public class LastTestStorage {
 
     enum Environment {
         LOCAL,
-        REMOTE
+        REMOTE,
+        REMOTEJ
     }
 
     public static void setLastTestStorage(final String host,
@@ -54,6 +55,17 @@ public class LastTestStorage {
         else {
             setLocal();
         }
+        setBasePath(Locations.getBasePath());
+        isStored = true;
+
+        entriesByTabKey.put(runTabName, getLastTestEntry());
+    }
+
+    public static void setLastTestStorageRemoteJ(final String runTabName,
+                                                 final String[] jmxParameters) {
+        setRunTabName(runTabName);
+        setJmxParameters(jmxParameters);
+        setRemoteJ();
         setBasePath(Locations.getBasePath());
         isStored = true;
 
@@ -92,6 +104,14 @@ public class LastTestStorage {
         LastTestStorage.environment = Environment.LOCAL;
     }
 
+    public static void setRemoteJ() {
+        LastTestStorage.environment = Environment.REMOTEJ;
+    }
+
+    public static boolean isRemoteJ() {
+        return environment == Environment.REMOTEJ;
+    }
+
     // ====== Unified object API ======
 
     /** Immutable snapshot of the last test state (including tabKey). */
@@ -99,14 +119,16 @@ public class LastTestStorage {
 
         private final String host;
         private final boolean isRemote;
+        private final boolean isRemoteJ;
         private final String runTabName;
         private final String[] jmxParameters;
         private final String basePath;
 
-        private LastTestEntry(String host, boolean isRemote,
+        private LastTestEntry(String host, boolean isRemote, boolean isRemoteJ,
                               String runTabName, String[] jmxParameters, String basePath) {
             this.host = host;
             this.isRemote = isRemote;
+            this.isRemoteJ = isRemoteJ;
             this.runTabName = runTabName;
             this.jmxParameters = jmxParameters;
             this.basePath = basePath;
@@ -118,6 +140,10 @@ public class LastTestStorage {
 
         public boolean isRemote() {
             return isRemote;
+        }
+
+        public boolean isRemoteJ() {
+            return isRemoteJ;
         }
 
         public String getRunTabName() {
@@ -143,6 +169,7 @@ public class LastTestStorage {
         return new LastTestEntry(
             host,
             isRemote(),
+            isRemoteJ(),
             runTabName,
             jmxParameters,
             basePath

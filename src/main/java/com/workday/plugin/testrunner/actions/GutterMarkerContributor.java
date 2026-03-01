@@ -27,6 +27,7 @@ import com.workday.plugin.testrunner.common.Locations;
 import com.workday.plugin.testrunner.execution.LocalRunStrategy;
 import com.workday.plugin.testrunner.execution.OSCommands;
 import com.workday.plugin.testrunner.execution.ParamBuilder;
+import com.workday.plugin.testrunner.execution.RemoteJRunStrategy;
 import com.workday.plugin.testrunner.execution.RemoteRunStrategy;
 import com.workday.plugin.testrunner.execution.RunStrategy;
 import com.workday.plugin.testrunner.execution.TestRunner;
@@ -87,8 +88,9 @@ public class GutterMarkerContributor
         final String[] methodArgs = ParamBuilder.getMethodArgs(methodSignature);
         AnAction runLocal = createAction(method.getName(), project, methodArgs, false);
         AnAction runRemote = createAction(method.getName(), project, methodArgs, true);
+        AnAction runRemoteJ = createRemoteJAction(method.getName(), project, methodArgs);
 
-        return new Info(Run, element -> "Run OMS Test Method", runLocal, runRemote);
+        return new Info(Run, element -> "Run OMS Test Method", runLocal, runRemote, runRemoteJ);
     }
 
     private Info getClassInfo(PsiClass clazz, Project project) {
@@ -105,8 +107,9 @@ public class GutterMarkerContributor
         final String[] classArgs = ParamBuilder.getClassArgs(fqName);
         AnAction runLocal = createAction(clazz.getName(), project, classArgs, false);
         AnAction runRemote = createAction(clazz.getName(), project, classArgs, true);
+        AnAction runRemoteJ = createRemoteJAction(clazz.getName(), project, classArgs);
 
-        return new Info(Run, element -> "Run OMS Test Class", runLocal, runRemote);
+        return new Info(Run, element -> "Run OMS Test Class", runLocal, runRemote, runRemoteJ);
     }
 
     private @NotNull AnAction createAction(
@@ -143,6 +146,25 @@ public class GutterMarkerContributor
                 ApplicationManager.getApplication().executeOnPooledThread(() -> {
                     LastTestStorage.setLastTestStorage(host, isRemote, runTabName, jmxParameters);
                     TestRunner.runTest(project, host, jmxParameters, runStrategy, uiDescriptor);
+                });
+            }
+        };
+    }
+
+    private @NotNull AnAction createRemoteJAction(
+        final String testName, final Project project, final String[] jmxParameters) {
+
+        return new AnAction("Run " + testName + " (RemoteJ)", null, Run) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent event) {
+                final String runTabName = testName + "@remoteJ";
+                final String gradleTestArg = ParamBuilder.getGradleTestArg(jmxParameters);
+                final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, runTabName);
+                ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                    LastTestStorage.setLastTestStorageRemoteJ(runTabName, jmxParameters);
+                    final RemoteJRunStrategy strategy = new RemoteJRunStrategy();
+                    strategy.setProcessHandler(uiDescriptor.getUiProcessHandler());
+                    strategy.runGradleTest(gradleTestArg);
                 });
             }
         };

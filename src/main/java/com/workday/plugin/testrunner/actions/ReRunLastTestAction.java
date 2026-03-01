@@ -22,6 +22,8 @@ import com.workday.plugin.testrunner.common.Locations;
 import com.workday.plugin.testrunner.common.SshProbe;
 import com.workday.plugin.testrunner.execution.LocalRunStrategy;
 import com.workday.plugin.testrunner.execution.OSCommands;
+import com.workday.plugin.testrunner.execution.ParamBuilder;
+import com.workday.plugin.testrunner.execution.RemoteJRunStrategy;
 import com.workday.plugin.testrunner.execution.RemoteRunStrategy;
 import com.workday.plugin.testrunner.execution.RunStrategy;
 import com.workday.plugin.testrunner.execution.TestRunner;
@@ -35,12 +37,12 @@ import com.workday.plugin.testrunner.ui.UiContentDescriptor;
  * @since Jun-2025
  */
 public class ReRunLastTestAction
-    extends AnAction {
+        extends AnAction {
 
     @SuppressWarnings("ActionPresentationInstantiatedInCtor")  // this is the only way to show the correct icon
     public ReRunLastTestAction() {
         super("Re-Run OMS Test", "Re-runs the last executed OMS test",
-            IconLoader.getIcon("icons/rerun.svg", ReRunLastTestAction.class));
+                IconLoader.getIcon("icons/rerun.svg", ReRunLastTestAction.class));
     }
 
     @Override
@@ -57,7 +59,7 @@ public class ReRunLastTestAction
         }
 
         RunContentDescriptor descriptor = RunContentManager.getInstance(project)
-            .getSelectedContent();
+                .getSelectedContent();
         String tabKey = descriptor != null ? descriptor.getDisplayName() : null;
         LastTestStorage.LastTestEntry lastEntry;
         if (tabKey != null) {
@@ -77,6 +79,7 @@ public class ReRunLastTestAction
 
         final String basePath = lastEntry.getBasePath();
         final boolean isRemote = lastEntry.isRemote();
+        final boolean isRemoteJ = lastEntry.isRemoteJ();
         String[] jmxParameters = lastEntry.getJmxParameters();
         String runTabName = lastEntry.getRunTabName();
         String host = lastEntry.getHost();
@@ -85,6 +88,18 @@ public class ReRunLastTestAction
         final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, runTabName);
 
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
+
+            if (jmxParameters == null || jmxParameters.length == 0) {
+                return;
+            }
+
+            // RemoteJ: run via Gradle remoteServerTest locally
+            if (isRemoteJ) {
+                final RemoteJRunStrategy strategy = new RemoteJRunStrategy();
+                strategy.setProcessHandler(uiDescriptor.getUiProcessHandler());
+                strategy.runGradleTest(ParamBuilder.getGradleTestArg(jmxParameters));
+                return;
+            }
 
             final RunStrategy runStrategy;
             if (isRemote) {
@@ -99,23 +114,20 @@ public class ReRunLastTestAction
                     return;
                 }
                 runStrategy = new RemoteRunStrategy(new OSCommands(host), host, getLocalResultFile(),
-                    SUV_RESULTS_FILE, TEST_RESULTS_FOLDER_SUV_DOCKER);
+                        SUV_RESULTS_FILE, TEST_RESULTS_FOLDER_SUV_DOCKER);
             }
             else {
                 runStrategy = new LocalRunStrategy(new OSCommands(host), getLocalResultFile(), getBasePath());
             }
 
-            if (jmxParameters == null || jmxParameters.length == 0) {
-                return;
-            }
             TestRunner.runTest(project, host, jmxParameters, runStrategy, uiDescriptor);
         });
     }
 
     public static void showBalloon(Project project, String message) {
         NotificationGroupManager.getInstance()
-            .getNotificationGroup("OmsTest Notifications") // must match the ID you registered in plugin.xml
-            .createNotification(message, NotificationType.ERROR)
-            .notify(project);
+                .getNotificationGroup("OmsTest Notifications") // must match the ID you registered in plugin.xml
+                .createNotification(message, NotificationType.ERROR)
+                .notify(project);
     }
 }

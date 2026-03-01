@@ -15,7 +15,7 @@ import com.workday.plugin.testrunner.ui.UiContentDescriptor;
  */
 
 public class LocalRunStrategy
-    implements RunStrategy {
+        implements RunStrategy {
 
     private final OSCommands osCommands;
     private final String localResultFile;
@@ -50,7 +50,7 @@ public class LocalRunStrategy
 
     @Override
     public void verifyOms() {
-        String curlCmd = "https://i-0e2f5c30070dce69d.workdaysuv.com/ors/-/tenantoperation/-list";
+        String curlCmd = "http://localhost:12001/ots/-/tenantoperation/-list";
         String output = osCommands.executeLocalCommand("curl " + curlCmd);
         if (!output.contains("\noms: Ready")) {
             final String error = "Error: Installation does not support oms tenant, output = ";

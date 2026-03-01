@@ -12,7 +12,7 @@ import com.workday.plugin.testrunner.ui.UiContentDescriptor;
  * @since Jun-2025
  */
 public class RemoteRunStrategy
-    implements RunStrategy {
+        implements RunStrategy {
 
     private final OSCommands osCommands;
     private final String host;
@@ -65,7 +65,7 @@ public class RemoteRunStrategy
 
     @Override
     public void verifyOms() {
-        String curlCmd = "https://" + host + "/ors/-/tenantoperation/-list";
+        String curlCmd = "https://" + host + "/ors/-/tenantoperation/-list"; // ORS for remote
         String output = osCommands.executeRemoteCommand("curl " + curlCmd);
         if (!output.contains("\noms: Ready")) {
             final String errorMessage = "Error: Installation does not support oms tenant";

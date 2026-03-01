@@ -25,7 +25,7 @@ runIde {
 }
 
 patchPluginXml {
-    sinceBuild  = '240'
+    sinceBuild  = '241'
     untilBuild  = '999.*'
     changeNotes = 'Initial plugin to run Gradle test by class or method.'
 }

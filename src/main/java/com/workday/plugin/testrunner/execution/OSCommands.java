@@ -16,7 +16,8 @@ public class OSCommands {
     private static final String SUV_USER = "root";
     private static final String CMD_DELETE_FILE = "rm -f %s";
     private static final String CMD_SCP = "scp %s@%s:%s %s";
-    private static final String CMD_GREP_JMX_PORT = "ps -ef | grep wd.service.type=ors | grep -o 'com.sun.management.jmxremote.port=[0-9]*' | cut -d'=' -f2";
+    // Matches both OTS (local) and ORS (remote) service types
+    private static final String CMD_GREP_JMX_PORT = "ps -ef | grep -E 'wd.service.type=ots|wd.service.type=ors' | grep -o 'com.sun.management.jmxremote.port=[0-9]*' | cut -d'=' -f2";
     private static final String CMD_ON_SUV = "ssh -o StrictHostKeyChecking=no %s@%s %s";
     private static final String CMD_START_PORT_FORWARDING = "ssh -o StrictHostKeyChecking=no -L %d:localhost:%d %s@%s";
 
@@ -115,5 +116,3 @@ public class OSCommands {
         }
     }
 }
-
-
