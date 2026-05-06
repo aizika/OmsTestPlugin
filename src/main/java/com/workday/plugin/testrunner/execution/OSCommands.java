@@ -16,8 +16,8 @@ public class OSCommands {
     private static final String SUV_USER = "root";
     private static final String CMD_DELETE_FILE = "rm -f %s";
     private static final String CMD_SCP = "scp -p %s@%s:%s %s"; // -p preserves remote mtime for timestamp checks
-    // OTS (local) JMX port discovery
-    private static final String CMD_GREP_JMX_PORT = "ps -ef | grep wd.service.type=ots | grep -o 'com.sun.management.jmxremote.port=[0-9]*' | cut -d'=' -f2";
+    // Local OMS/ORS JMX port discovery — matches any local process with wd.service.type= (ots or ors)
+    private static final String CMD_GREP_JMX_PORT = "ps -ef | grep 'wd.service.type=' | grep -v grep | grep -o 'com.sun.management.jmxremote.port=[0-9]*' | cut -d'=' -f2 | head -1";
     private static final String CMD_ON_SUV = "ssh -o StrictHostKeyChecking=no -o RequestTTY=no %s@%s %s";
     private static final String CMD_START_PORT_FORWARDING = "ssh -o StrictHostKeyChecking=no -L %d:localhost:%d %s@%s";
 
