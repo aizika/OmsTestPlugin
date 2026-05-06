@@ -54,11 +54,35 @@ Debug 'FormatDateSpartaTest'                       |  Native IntelliJ actions
 ...                                                |
 ----
 OMS
-├─ ▶️ Run FormatDateSpartaTest (RemoteJ)            |  Gradle-based, local or tunneled SUV
-└─ ▶️ Run FormatDateSpartaTest on ORS               |  SSH + JMX, direct SUV access
+├─ ▶️ Run FormatDateSpartaTest (SUV JMX)            |  SSH + JMX, direct SUV access
+├─ ▶️ Run FormatDateSpartaTest (Local JMX)          |  JMX, local ORS/OTS instance
+└─ ▶️ Run FormatDateSpartaTest (RemoteJ)            |  Gradle-based, local or tunneled SUV
 ```
 
-### Mode 1: RemoteJ
+### Mode 1: SUV JMX (SSH + JMX)
+
+Connects directly to the SUV host via SSH, locates the ORS JVM by its JMX port (12096), creates the test output directory inside the ORS PID namespace, runs jmxterm, and SCPs results back.
+
+**When to use:**
+- Running against a **remote SUV host**
+- Faster iteration — no Gradle overhead
+
+**Requirements:**
+- `jmxterm-1.0-SNAPSHOT-uber.jar` at `/usr/local/bin/` on the SUV host
+- SSH access to `root@<suv-host>`
+
+Click **Run X (SUV JMX)** — the plugin will prompt for the SUV hostname.
+
+### Mode 2: Local JMX
+
+Connects via JMX directly to a locally-running ORS or OTS instance. Discovers the JMX port automatically by inspecting the local Java process.
+
+**When to use:**
+- Running against a **local ORS/OTS** instance
+
+Click **Run X (Local JMX)** — no host prompt, runs immediately.
+
+### Mode 3: RemoteJ
 
 Uses Gradle's `remoteServerTest` task to distribute tests via the ORS RemoteJ endpoint (port 12701).
 
@@ -66,30 +90,11 @@ Uses Gradle's `remoteServerTest` task to distribute tests via the ORS RemoteJ en
 - Running against a **local ORS** instance (no configuration required)
 - Running against a **SUV host via SSH tunnel** (set up the tunnel first, then run)
 
-**Local ORS** (no setup needed — just click):
-```
-Run FormatDateSpartaTest (RemoteJ)
-```
-
 **SUV via SSH tunnel** — first forward the ports:
 ```bash
 ssh -A -f -N -L 12090:localhost:12090 -R 43096:localhost:43096 root@<suv-host>
 ```
-Then click **Run X (RemoteJ)** — the plugin will prompt for the SUV hostname.
-
-### Mode 2: Run on ORS (SSH + JMX)
-
-Connects directly to the SUV host via SSH, locates the ORS JVM by its JMX port (12096), creates the test output directory inside the ORS PID namespace, runs jmxterm, and SCPs results back.
-
-**When to use:**
-- Running against a **remote SUV host** without an SSH tunnel
-- Faster iteration on a SUV — no Gradle overhead
-
-**Requirements:**
-- `jmxterm-1.0-SNAPSHOT-uber.jar` at `/usr/local/bin/` on the SUV host
-- SSH access to `root@<suv-host>`
-
-Click **Run X on ORS** — the plugin will prompt for the SUV hostname.
+Then click **Run X (RemoteJ)**.
 
 ---
 

@@ -82,11 +82,11 @@ public class GutterMarkerContributor
 
         final String methodSignature = buildMethodSignature(classFqName, method);
         final String[] methodArgs = ParamBuilder.getMethodArgs(methodSignature);
-        AnAction runRemoteJ = createRemoteJAction(method.getName(), project, methodArgs);
-        AnAction runOrs = createOrsAction(method.getName(), project, methodArgs);
+        AnAction runSuvJmx = createOrsAction(method.getName(), project, methodArgs);
         AnAction runLocalJmx = createLocalJmxAction(method.getName(), project, methodArgs);
+        AnAction runRemoteJ = createRemoteJAction(method.getName(), project, methodArgs);
 
-        return new Info(Run, element -> "Run OMS Test Method", runRemoteJ, runOrs, runLocalJmx);
+        return new Info(Run, element -> "Run OMS Test Method", runSuvJmx, runLocalJmx, runRemoteJ);
     }
 
     private Info getClassInfo(PsiClass clazz, Project project) {
@@ -101,11 +101,11 @@ public class GutterMarkerContributor
         }
 
         final String[] classArgs = ParamBuilder.getClassArgs(fqName);
-        AnAction runRemoteJ = createRemoteJAction(clazz.getName(), project, classArgs);
-        AnAction runOrs = createOrsAction(clazz.getName(), project, classArgs);
+        AnAction runSuvJmx = createOrsAction(clazz.getName(), project, classArgs);
         AnAction runLocalJmx = createLocalJmxAction(clazz.getName(), project, classArgs);
+        AnAction runRemoteJ = createRemoteJAction(clazz.getName(), project, classArgs);
 
-        return new Info(Run, element -> "Run OMS Test Class", runRemoteJ, runOrs, runLocalJmx);
+        return new Info(Run, element -> "Run OMS Test Class", runSuvJmx, runLocalJmx, runRemoteJ);
     }
 
     private @NotNull AnAction createRemoteJAction(
@@ -133,7 +133,7 @@ public class GutterMarkerContributor
     private @NotNull AnAction createOrsAction(
             final String testName, final Project project, final String[] jmxParameters) {
 
-        return new AnAction("Run " + testName + " on ORS", null, Run) {
+        return new AnAction("Run " + testName + " (SUV JMX)", null, Run) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent event) {
                 HostPromptDialog dialog = new HostPromptDialog();
