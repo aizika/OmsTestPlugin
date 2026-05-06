@@ -3,19 +3,15 @@
   OMS Test Runner IntelliJ Plugin
 </h1>
 
-This plugin allows running OMS integration tests by method or class from IntelliJ IDEA. Tests could be run against SUV or locally running OMS.
+This plugin allows running OMS integration tests by method or class from IntelliJ IDEA against a running ORS instance — either locally or on a remote SUV host.
 It also includes a one-click option to re-run the last test.
 
 *It was tested very lightly, so please use it at your own risk and report any issues you find.*
 
 ---
 ## 🚀 Get the Plugin
-You can download the pre-built ZIP file:
-👉 [Download Plugin ZIP](https://github.com/aizika/OmsTestPlugin/releases/download/v2.2-beta/OmsTest-2.2-BETA.zip)
+Build from source:
 
-or build it from source:
-
-Run
 ```
 ./gradlew clean buildPlugin
 ```
@@ -31,13 +27,13 @@ build/distributions/
 1. Open **IntelliJ IDEA**
 2. Go to **Settings → Plugins**
 3. Click the **⚙️ (gear icon)** → **Install Plugin from Disk...**
-4. Choose the built or downloaded `.zip` file
+4. Choose the built `.zip` file
 5. Restart IntelliJ when prompted
 
 
 ### ✨ Features
 
-* ✅ clickable icons in the IntelliJ gutter
+* ✅ Clickable icons in the IntelliJ gutter
 * ✅ Re-run the **last test** with one click or shortcut
 * ✅ Outputs results to the **Run tool window**
 * ✅ For failing tests, displays clickable **stack trace**
@@ -48,68 +44,82 @@ build/distributions/
 
 ### Gutter Menu Integration
 
-The plugin extends IntelliJ’s **native gutter icons** for test classes and methods by adding custom OMS actions directly into the standard popup menu.
+The plugin extends IntelliJ's **native gutter icons** for test classes and methods by adding custom OMS actions directly into the standard popup menu.
 
-When you click the green triangle gutter icon next to a test method or class, IntelliJ displays its default test execution options. The plugin injects additional **OMS-specific actions** into this menu:
+When you click the green triangle gutter icon next to a test method or class, IntelliJ displays its default test execution options. The plugin injects two additional **OMS-specific actions**:
 
 ```
-Run 'MinMaxParsingTest'                          |
-Debug 'MinMaxParsingTest'                        |  Native IntelliJ actions
-Run 'MinMaxParsingTest' with Coverage            |
-Modify Run Configuration...                      |
+Run 'FormatDateSpartaTest'                         |
+Debug 'FormatDateSpartaTest'                       |  Native IntelliJ actions
+...                                                |
 ----
-OMS                                            
-├─ ▶️ Run MinMaxParsingTest on local OMS          |   Added by the plugin
-└─ ▶️ Run MinMaxParsingTest on SUV                |
+OMS
+├─ ▶️ Run FormatDateSpartaTest (RemoteJ)            |  Gradle-based, local or tunneled SUV
+└─ ▶️ Run FormatDateSpartaTest on ORS               |  SSH + JMX, direct SUV access
 ```
+
+### Mode 1: RemoteJ
+
+Uses Gradle's `remoteServerTest` task to distribute tests via the ORS RemoteJ endpoint (port 12701).
+
+**When to use:**
+- Running against a **local ORS** instance (no configuration required)
+- Running against a **SUV host via SSH tunnel** (set up the tunnel first, then run)
+
+**Local ORS** (no setup needed — just click):
+```
+Run FormatDateSpartaTest (RemoteJ)
+```
+
+**SUV via SSH tunnel** — first forward the ports:
+```bash
+ssh -A -f -N -L 12090:localhost:12090 -R 43096:localhost:43096 root@<suv-host>
+```
+Then click **Run X (RemoteJ)** — the plugin will prompt for the SUV hostname.
+
+### Mode 2: Run on ORS (SSH + JMX)
+
+Connects directly to the SUV host via SSH, locates the ORS JVM by its JMX port (12096), creates the test output directory inside the ORS PID namespace, runs jmxterm, and SCPs results back.
+
+**When to use:**
+- Running against a **remote SUV host** without an SSH tunnel
+- Faster iteration on a SUV — no Gradle overhead
+
+**Requirements:**
+- `jmxterm-1.0-SNAPSHOT-uber.jar` at `/usr/local/bin/` on the SUV host
+- SSH access to `root@<suv-host>`
+
+Click **Run X on ORS** — the plugin will prompt for the SUV hostname.
+
+---
 
 ### 🔁 Re-Run Last Test
 
-Quickly re-run the most recently executed test — local or remote — with a single click or shortcut. This is especially helpful for fast iterations during development and debugging.
+Quickly re-run the most recently executed test with a single click or shortcut.
 
 Shortcut (macOS): **⌃⌥⌘R** (Control + Option + Command + R)
 
 #### Tab-Dependent Reruns
 
-You can pin Run tabs and reopen them when needed.
-When you re-run a test from an existing Run tab, the plugin automatically restores that tab’s full context — including the last executed test, selected test runner (JMX or RemoteJ), and associated host.
-Multiple Run tabs can stay open simultaneously for different servers or configurations, and each tab preserves its own settings.
-If no Run tab is selected, the plugin will prompt you to create a new configuration.
+Multiple Run tabs can stay open simultaneously for different servers or configurations, each preserving its own context (test, runner mode, host). When you re-run from an existing tab, the plugin restores that tab's configuration automatically.
 
 #### Stored Hosts & History
 
-Whenever you run a remote test, the plugin remembers the host used.
-The Host Prompt Dialog now includes an editable drop-down list where you can either 
-* Choose from previously used hosts or
-* Enter a new host manually (paste or type).
-
-The host history is stored locally using IntelliJ’s PropertiesComponent and persists across IDE restarts.
-The most recently used host is pre-selected next time you run a remote test.
-History is limited to the last 10 entries.
-
-### 👀 Test Panel Overview
-The results of the tests run through the plugin appear in the standard **Run tool window**, using IntelliJ’s test UI infrastructure.
-The plugin attempts to mimic the native IntelliJ test runner experience as closely as possible.
-However, it does not support all features of the native test runner, such as test filtering or grouping.
-
-Tests results are taken from an XML file generated by the OMS test runner task, which is parsed and displayed in the UI.
-Failed and ignored tests display the reasons of failure or ignore status, including clickable stack traces and messages.
+The Host Prompt dialog includes an editable drop-down with previously used hosts. The most recently used host is pre-selected. History persists across IDE restarts (up to 10 entries).
 
 ---
 
-## 🔌 Powered By
-The functionality is based on:
-- Local OMS [Running tests with runTestJmx task via IntelliJ](https://oms.workday.build/omsdev/getting-started/running-server-tests-with-jmx/#running-tests-with-runtestjmx-task-via-intellij) of OMS Encyclopedia.
-- SUV: [Clinton's script](https://confluence.workday.com/display/~kyle.l.harris/Running+OMS+Server+Tests+on+an+SUV?focusedCommentId=750401483#comment-750401483)
-- JMX: Shiv's Gowda [Running OMS Server Unit Tests as Junit Tests in IntelliJ](https://confluence.workday.com/display/~shiv.gowda/Running+OMS+Server+Unit+Tests+as+Junit+Tests+in+IntelliJ)
-- IntelliJ Service Messaging: [Limited documentation](https://www.jetbrains.com/help/teamcity/service-messages.html)
+### 👀 Test Panel Overview
+
+Results appear in the standard **Run tool window**. Failed and ignored tests display the failure reason with clickable stack traces.
+
 ---
 
 ## 🔧 Compatibility
 
 * Tested on IntelliJ IDEA 2024.1+
 * Tested on Community (IC); should work on Ultimate (IU)
-* Tested on macOS; should work cross-platform
+* Tested on macOS
 
 ---
 ## 👨‍💻 Author

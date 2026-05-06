@@ -35,26 +35,29 @@ public class LastTestStorage {
         Collections.synchronizedMap(new HashMap<>());
 
     enum Environment {
-        LOCAL,
-        REMOTE,
-        REMOTEJ
+        REMOTEJ,
+        ORS,
+        LOCAL_JMX
     }
 
-    public static void setLastTestStorage(final String host,
-                                          final boolean isRemote,
-                                          final String runTabName,
-                                          final String[] jmxParameters) {
-        if (isRemote) {
-            setHost(host);
-        }
+    public static void setLastTestStorageLocalJmx(final String runTabName,
+                                                   final String[] jmxParameters) {
         setRunTabName(runTabName);
         setJmxParameters(jmxParameters);
-        if (isRemote) {
-            setRemote();
-        }
-        else {
-            setLocal();
-        }
+        setLocalJmx();
+        setBasePath(Locations.getBasePath());
+        isStored = true;
+
+        entriesByTabKey.put(runTabName, getLastTestEntry());
+    }
+
+    public static void setLastTestStorageOrs(final String host,
+                                             final String runTabName,
+                                             final String[] jmxParameters) {
+        setHost(host);
+        setRunTabName(runTabName);
+        setJmxParameters(jmxParameters);
+        setOrs();
         setBasePath(Locations.getBasePath());
         isStored = true;
 
@@ -70,10 +73,6 @@ public class LastTestStorage {
         isStored = true;
 
         entriesByTabKey.put(runTabName, getLastTestEntry());
-    }
-
-    public static boolean isRemote() {
-        return environment == Environment.REMOTE;
     }
 
     public static void setBasePath(final String basePath) {
@@ -96,14 +95,6 @@ public class LastTestStorage {
         LastTestStorage.jmxParameters = jmxParameters;
     }
 
-    public static void setRemote() {
-        LastTestStorage.environment = Environment.REMOTE;
-    }
-
-    public static void setLocal() {
-        LastTestStorage.environment = Environment.LOCAL;
-    }
-
     public static void setRemoteJ() {
         LastTestStorage.environment = Environment.REMOTEJ;
     }
@@ -112,23 +103,41 @@ public class LastTestStorage {
         return environment == Environment.REMOTEJ;
     }
 
+    public static void setOrs() {
+        LastTestStorage.environment = Environment.ORS;
+    }
+
+    public static boolean isOrs() {
+        return environment == Environment.ORS;
+    }
+
+    public static void setLocalJmx() {
+        LastTestStorage.environment = Environment.LOCAL_JMX;
+    }
+
+    public static boolean isLocalJmx() {
+        return environment == Environment.LOCAL_JMX;
+    }
+
     // ====== Unified object API ======
 
     /** Immutable snapshot of the last test state (including tabKey). */
     public static class LastTestEntry {
 
         private final String host;
-        private final boolean isRemote;
         private final boolean isRemoteJ;
+        private final boolean isOrs;
+        private final boolean isLocalJmx;
         private final String runTabName;
         private final String[] jmxParameters;
         private final String basePath;
 
-        private LastTestEntry(String host, boolean isRemote, boolean isRemoteJ,
+        private LastTestEntry(String host, boolean isRemoteJ, boolean isOrs, boolean isLocalJmx,
                               String runTabName, String[] jmxParameters, String basePath) {
             this.host = host;
-            this.isRemote = isRemote;
             this.isRemoteJ = isRemoteJ;
+            this.isOrs = isOrs;
+            this.isLocalJmx = isLocalJmx;
             this.runTabName = runTabName;
             this.jmxParameters = jmxParameters;
             this.basePath = basePath;
@@ -138,12 +147,16 @@ public class LastTestStorage {
             return host;
         }
 
-        public boolean isRemote() {
-            return isRemote;
-        }
-
         public boolean isRemoteJ() {
             return isRemoteJ;
+        }
+
+        public boolean isOrs() {
+            return isOrs;
+        }
+
+        public boolean isLocalJmx() {
+            return isLocalJmx;
         }
 
         public String getRunTabName() {
@@ -168,8 +181,9 @@ public class LastTestStorage {
         }
         return new LastTestEntry(
             host,
-            isRemote(),
             isRemoteJ(),
+            isOrs(),
+            isLocalJmx(),
             runTabName,
             jmxParameters,
             basePath

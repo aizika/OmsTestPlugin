@@ -1,8 +1,5 @@
 package com.workday.plugin.testrunner.actions;
 
-import static com.workday.plugin.testrunner.common.Locations.SUV_RESULTS_FILE;
-import static com.workday.plugin.testrunner.common.Locations.TEST_RESULTS_FOLDER_SUV_DOCKER;
-import static com.workday.plugin.testrunner.common.Locations.getBasePath;
 import static com.workday.plugin.testrunner.common.Locations.getLocalResultFile;
 
 import org.jetbrains.annotations.NotNull;
@@ -22,9 +19,9 @@ import com.workday.plugin.testrunner.common.Locations;
 import com.workday.plugin.testrunner.common.SshProbe;
 import com.workday.plugin.testrunner.execution.LocalRunStrategy;
 import com.workday.plugin.testrunner.execution.OSCommands;
+import com.workday.plugin.testrunner.execution.OrsRunStrategy;
 import com.workday.plugin.testrunner.execution.ParamBuilder;
 import com.workday.plugin.testrunner.execution.RemoteJRunStrategy;
-import com.workday.plugin.testrunner.execution.RemoteRunStrategy;
 import com.workday.plugin.testrunner.execution.RunStrategy;
 import com.workday.plugin.testrunner.execution.TestRunner;
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
@@ -78,8 +75,9 @@ public class ReRunLastTestAction
         }
 
         final String basePath = lastEntry.getBasePath();
-        final boolean isRemote = lastEntry.isRemote();
         final boolean isRemoteJ = lastEntry.isRemoteJ();
+        final boolean isOrs = lastEntry.isOrs();
+        final boolean isLocalJmx = lastEntry.isLocalJmx();
         String[] jmxParameters = lastEntry.getJmxParameters();
         String runTabName = lastEntry.getRunTabName();
         String host = lastEntry.getHost();
@@ -93,7 +91,7 @@ public class ReRunLastTestAction
                 return;
             }
 
-            // RemoteJ: run via Gradle remoteServerTest locally
+            // RemoteJ: run via Gradle remoteServerTest
             if (isRemoteJ) {
                 final RemoteJRunStrategy strategy = new RemoteJRunStrategy();
                 strategy.setProcessHandler(uiDescriptor.getUiProcessHandler());
@@ -101,25 +99,29 @@ public class ReRunLastTestAction
                 return;
             }
 
-            final RunStrategy runStrategy;
-            if (isRemote) {
-                if (host == null || host.isBlank()) {
-                    showBalloon(project, "Host is not specified");
-                    return;
-                }
-                final SshProbe.Result probe = SshProbe.probe(host);
-
-                if (probe.exitCode != 0) {
-                    showBalloon(project, "Cannot use host: " + host + ": " + probe.reason);
-                    return;
-                }
-                runStrategy = new RemoteRunStrategy(new OSCommands(host), host, getLocalResultFile(),
-                        SUV_RESULTS_FILE, TEST_RESULTS_FOLDER_SUV_DOCKER);
-            }
-            else {
-                runStrategy = new LocalRunStrategy(new OSCommands(host), getLocalResultFile(), getBasePath());
+            // Local JMX: run via direct JMX connection to local OTS
+            if (isLocalJmx) {
+                final RunStrategy runStrategy = new LocalRunStrategy(
+                        new OSCommands(Locations.LOCALHOST), getLocalResultFile(), Locations.getBasePath());
+                TestRunner.runTest(project, Locations.LOCALHOST, jmxParameters, runStrategy, uiDescriptor);
+                return;
             }
 
+            // ORS: run via SSH + jmxterm in ORS PID namespace
+            if (!isOrs) {
+                showBalloon(project, "Cannot re-run: no stored configuration");
+                return;
+            }
+            if (host == null || host.isBlank()) {
+                showBalloon(project, "Host is not specified");
+                return;
+            }
+            final SshProbe.Result probe = SshProbe.probe(host);
+            if (probe.exitCode != 0) {
+                showBalloon(project, "Cannot use host: " + host + ": " + probe.reason);
+                return;
+            }
+            final RunStrategy runStrategy = new OrsRunStrategy(new OSCommands(host), host, getLocalResultFile());
             TestRunner.runTest(project, host, jmxParameters, runStrategy, uiDescriptor);
         });
     }

@@ -21,6 +21,7 @@ public interface RunStrategy {
     void verifyOms();
     void maybeStartPortForwarding(final int jmxPort);
     boolean bypassJmxProxy();
+    default boolean isOrsContainer() { return false; }
     SshProbe.@NotNull Result getProbe(final String host);
 
     void setProcessHandler(UiContentDescriptor.UiProcessHandler processHandler);

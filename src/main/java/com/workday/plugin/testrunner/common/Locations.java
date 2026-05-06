@@ -17,6 +17,10 @@ public class Locations {
     public static final String LOCALHOST = "localhost";
     public static final String SUV_RESULTS_FILE = TEST_RESULTS_FOLDER_SUV + "/" + TEST_RESULTS_FILE;
 
+    public static final String ORS_TESTOUT_JMX = "/tmp/testout";         // path inside ORS namespace
+    public static final String ORS_TESTOUT_REMOTE = "/root/testout";     // host-side copy for SCP
+    public static final String ORS_RESULTS_FILE = ORS_TESTOUT_REMOTE + "/" + TEST_RESULTS_FILE;
+
     private static String basePath;
 
     public static void setBasePath(String basePath) {

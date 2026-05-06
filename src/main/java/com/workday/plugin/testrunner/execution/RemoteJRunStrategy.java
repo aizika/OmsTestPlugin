@@ -1,7 +1,11 @@
 package com.workday.plugin.testrunner.execution;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -10,68 +14,35 @@ import com.workday.plugin.testrunner.common.SshProbe;
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 
 /**
- * RemoteJRunStrategy runs ORS tests locally via Gradle's remoteServerTest task.
- * Unlike JMX-based strategies, it streams Gradle output directly to the console
- * and relies on IntelliJ's native console parsing for clickable links.
- *
- * Command: ./gradlew :oms-application:remoteServerTest --tests "<testArg>"
+ * RemoteJRunStrategy runs ORS tests via ./gradlew with an injected Groovy init script
+ * (tc-listener.gradle) that emits minimal ##OMS| structured events to stdout.
+ * OmsEventParser converts these into ##teamcity[ service messages for IntelliJ's test tree.
  *
  * @author alexander.aizikivsky
  * @since Feb-2026
  */
-public class RemoteJRunStrategy
-    implements RunStrategy {
+public class RemoteJRunStrategy implements RunStrategy {
 
     private static final String GRADLE_TASK = ":oms-application:remoteServerTest";
+    private static final String GRADLE_EXTRA_PARAMS =
+            "-Pjunit.platform.engine.distributor.server.path=ors/execute_remote_junit " +
+                    "-Pjunit.platform.engine.distributor.server.port=12701 " +
+                    "--rerun";
 
     private UiContentDescriptor.UiProcessHandler processHandler;
 
-    @Override
-    public String getJmxResultFolder() {
-        // Not used — RemoteJ streams output directly, no XML result file
-        return "";
-    }
-
-    @Override
-    public String getHost() {
-        return Locations.LOCALHOST;
-    }
-
-    @Override
-    public int getOmsJmxPort() {
-        // Not used — RemoteJ runs via Gradle, not JMX
-        return -1;
-    }
-
-    @Override
-    public void deleteTempFiles() {
-        // no-op — no temp files for RemoteJ
-    }
-
-    @Override
-    public void copyTestResults() {
-        // no-op — results are streamed directly to console
-    }
-
-    @Override
-    public void verifyOms() {
-        // no-op — Gradle will fail naturally if ORS is not running
-    }
-
-    @Override
-    public void maybeStartPortForwarding(final int jmxPort) {
-        // no-op — runs locally
-    }
-
-    @Override
-    public boolean bypassJmxProxy() {
-        // Not applicable — RemoteJ does not use JMX at all
-        return false;
-    }
+    @Override public String getJmxResultFolder() { return ""; }
+    @Override public String getHost() { return Locations.LOCALHOST; }
+    @Override public int getOmsJmxPort() { return -1; }
+    @Override public void deleteTempFiles() {}
+    @Override public void copyTestResults() {}
+    @Override public void verifyOms() {}
+    @Override public void maybeStartPortForwarding(final int jmxPort) {}
+    @Override public boolean bypassJmxProxy() { return false; }
+    public void setProject(final com.intellij.openapi.project.Project project) {}
 
     @Override
     public SshProbe.@NotNull Result getProbe(final String host) {
-        // Always reachable — runs on localhost
         return new SshProbe.Result(true, "", 0, "", Locations.LOCALHOST);
     }
 
@@ -80,41 +51,63 @@ public class RemoteJRunStrategy
         this.processHandler = processHandler;
     }
 
-    /**
-     * Runs the Gradle remoteServerTest task for the given test argument and streams
-     * stdout/stderr directly to the Run console.
-     *
-     * @param gradleTestArg fully qualified test in Gradle format: "com.example.MyTest.myMethod"
-     *                      or "com.example.MyTest" for a full class run
-     */
     public void runGradleTest(final String gradleTestArg) {
         final String basePath = Locations.getBasePath();
-        final String command = String.format(
-            "./gradlew %s --tests \"%s\"", GRADLE_TASK, gradleTestArg);
 
-        processHandler.log("Running: " + command);
-        processHandler.log("Working directory: " + basePath);
+        processHandler.log("Terminal command: cd " + basePath + " && ./gradlew " + GRADLE_TASK
+                + " --tests \"" + gradleTestArg + "\" " + GRADLE_EXTRA_PARAMS);
 
-        try {
-            Process process = new ProcessBuilder("/bin/bash", "-c", command)
-                .directory(new java.io.File(basePath))
-                .redirectErrorStream(true)
-                .start();
+        com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            File initScript = null;
+            try {
+                initScript = extractInitScript();
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    processHandler.log(line);
+                final String cmd = "./gradlew " + GRADLE_TASK
+                        + " --tests \"" + gradleTestArg + "\" "
+                        + GRADLE_EXTRA_PARAMS
+                        + " --init-script " + initScript.getAbsolutePath();
+
+                Process process = new ProcessBuilder("/bin/zsh", "-c", cmd)
+                        .directory(new File(basePath))
+                        .redirectErrorStream(true)
+                        .start();
+
+                final OmsEventParser parser = new OmsEventParser(processHandler);
+
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        if (!parser.process(line)) {
+                            // Not an ##OMS| event — show as regular console output
+                            processHandler.log(line);
+                        }
+                    }
                 }
-            }
 
-            int exitCode = process.waitFor();
-            processHandler.log("Process exited with code " + exitCode);
-            processHandler.finish(exitCode);
-        }
-        catch (Exception e) {
-            processHandler.error("RemoteJ run failed: " + e.getMessage());
-            processHandler.finish(1);
+                parser.finish();
+                int exitCode = process.waitFor();
+                processHandler.finish(exitCode);
+
+            } catch (Exception e) {
+                processHandler.error("Failed to run Gradle: " + e.getMessage());
+                processHandler.finish(1);
+            } finally {
+                if (initScript != null) initScript.delete();
+            }
+        });
+    }
+
+    private File extractInitScript() throws Exception {
+        try (InputStream is = getClass().getResourceAsStream("/tc-listener.gradle")) {
+            if (is == null) {
+                throw new IllegalStateException("tc-listener.gradle not found in plugin resources");
+            }
+            String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            File tmp = File.createTempFile("oms-tc-listener", ".gradle");
+            try (FileWriter fw = new FileWriter(tmp)) {
+                fw.write(content);
+            }
+            return tmp;
         }
     }
 }

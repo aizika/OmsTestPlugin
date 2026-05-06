@@ -1,16 +1,15 @@
 package com.workday.plugin.testrunner.execution;
 
+import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import org.jetbrains.annotations.NotNull;
 
-import com.intellij.execution.executors.DefaultRunExecutor;
-import com.intellij.execution.ui.RunContentManager;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 
-import com.workday.plugin.testrunner.common.SshProbe;
+import com.workday.plugin.testrunner.common.Locations;
 import com.workday.plugin.testrunner.ui.TestResultPresenter;
 import com.workday.plugin.testrunner.ui.UiContentDescriptor;
 
@@ -44,16 +43,6 @@ public class TestRunner {
         runStrategy.setProcessHandler(processHandler);
 
         try {
-            processHandler.log("Verifying OMS tenant on host: " + host);
-            final SshProbe.Result probe = runStrategy.getProbe(host);
-            if (probe.exitCode != 0) {
-                processHandler.error("Host " + host + " is not reachable: " + probe.reason);
-                descriptor.getUiProcessHandler().destroyProcess();
-                RunContentManager.getInstance(project)
-                    .removeRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor);
-                return;
-            }
-//            runStrategy.verifyOms();
 
             final int jmxPort = runStrategy.getOmsJmxPort();
             processHandler.log("OMS JMX port: " + jmxPort);
@@ -63,27 +52,47 @@ public class TestRunner {
         }
         catch (Exception ex) {
             processHandler.error("An error occurred: " + ex.getMessage());
-            descriptor.getUiProcessHandler().destroyProcess();
-            RunContentManager.getInstance(project)
-                .removeRunContent(DefaultRunExecutor.getRunExecutorInstance(), descriptor);
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            processHandler.error(sw.toString());
+            descriptor.getUiProcessHandler().finish(1);
         }
     }
 
     public void runTests(final UiContentDescriptor.UiProcessHandler handler) {
         this.handler = handler;
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            final long runStartedAt = System.currentTimeMillis();
             try {
                 //   JmxTestExecutor supposed to work always, but sometimes it fails to create XML log files.
                 //  To deal with this, we use a BypassTestExecutor that runs the JMX command directly on the remote server
                 // TODO: Investigate and remove this workaround when JMXTestExecutor is fixed
                 if (strategy.bypassJmxProxy()) {
-                    new BypassTestExecutor(strategy, jmxPort, handler).runTestOms(jmxParams);
+                    final BypassTestExecutor ex = new BypassTestExecutor(strategy, jmxPort, handler);
+                    if (strategy.isOrsContainer()) {
+                        ex.runTestOrs(jmxParams);
+                    } else {
+                        ex.runTestOms(jmxParams);
+                    }
                 }
                 else {
                     new JmxTestExecutor(strategy, jmxPort, handler).runTestOms(jmxParams);
                 }
                 log("Retrieving test output");
                 strategy.copyTestResults();
+
+                final File resultFile = new File(Locations.getLocalResultFile());
+                if (!resultFile.exists()) {
+                    logError("No result file found — the JMX call produced no output");
+                    handler.finish(1);
+                    return;
+                }
+                if (resultFile.lastModified() < runStartedAt) {
+                    logError("Result file predates this run — stale results discarded (JMX call likely failed silently)");
+                    handler.finish(1);
+                    return;
+                }
+
                 new TestResultPresenter().displayParsedResults(handler);
             }
             catch (Exception ex) {

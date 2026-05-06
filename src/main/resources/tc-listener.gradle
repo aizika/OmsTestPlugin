@@ -1,0 +1,39 @@
+// Minimal Groovy init script — emits simple ##OMS| events, no escaping logic.
+// All formatting and TeamCity conversion is handled in Java (RemoteJRunStrategy).
+gradle.addListener(new TestListener() {
+    void beforeSuite(TestDescriptor suite) {
+        if (suite.parent != null) {
+            println "##OMS|SUITE_START|${suite.className ?: ''}|${suite.displayName}"
+        }
+    }
+    void afterSuite(TestDescriptor suite, TestResult result) {
+        if (suite.parent != null) {
+            println "##OMS|SUITE_END|${suite.className ?: ''}|${suite.displayName}"
+        }
+    }
+    void beforeTest(TestDescriptor test) {
+        println "##OMS|TEST_START|${test.className}|${test.displayName}|${test.name}"
+    }
+    void afterTest(TestDescriptor test, TestResult result) {
+        def dur = result.endTime - result.startTime
+        if (result.resultType == TestResult.ResultType.FAILURE) {
+            def ex = result.exception
+            def msg = ex?.message ?: 'Test failed'
+            // Single-line message (newlines replaced with \n literal)
+            def msgLine = msg?.replace('\n', '\\n')?.replace('\r', '') ?: ''
+            println "##OMS|TEST_FAIL|${test.className}|${test.displayName}|${test.name}|${dur}|${msgLine}"
+            // Stack trace: one line per ##OMS|STACK| entry
+            if (ex != null) {
+                def sw = new java.io.StringWriter()
+                ex.printStackTrace(new java.io.PrintWriter(sw))
+                sw.toString().split('\n').each { line ->
+                    println "##OMS|STACK|${line}"
+                }
+            }
+        } else if (result.resultType == TestResult.ResultType.SKIPPED) {
+            println "##OMS|TEST_SKIP|${test.className}|${test.displayName}|${test.name}|${dur}"
+        } else {
+            println "##OMS|TEST_PASS|${test.className}|${test.displayName}|${test.name}|${dur}"
+        }
+    }
+})

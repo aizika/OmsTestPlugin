@@ -71,7 +71,7 @@ public class HostPromptDialog extends DialogWrapper {
         Matcher matcher = pattern.matcher(getRawHost());
         if (matcher.find()) {
             String id = matcher.group();
-            return id + ".workdaysuv.com";
+            return id + ".prd.workdaysuv.com";
         }
         return "";
     }

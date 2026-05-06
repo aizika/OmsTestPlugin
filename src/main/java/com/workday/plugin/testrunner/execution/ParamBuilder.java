@@ -15,8 +15,13 @@ public class ParamBuilder {
         return new String[] { "empty", className, "empty", "empty", "empty" };
     }
 
-    public static String @NotNull [] getMethodArgs(final String methodName) {
-        return new String[] { methodName, "empty", "empty", "empty", "empty" };
+    /**
+     * Builds JMX args for a method run.
+     * Format: "com.example.MyClass@myMethod" as a single string in args[0].
+     * The @ separator is safe for jmxterm (unlike #) and is understood by the OMS JMX MBean.
+     */
+    public static String @NotNull [] getMethodArgs(final String methodSignature) {
+        return new String[] { methodSignature, "empty", "empty", "empty", "empty" };
     }
 
     /**
@@ -25,7 +30,6 @@ public class ParamBuilder {
      * JMX class format:  args[0]="empty", args[1]="com.example.MyClass" -> "com.example.MyClass"
      */
     public static @NotNull String getGradleTestArg(final String @NotNull [] jmxArgs) {
-        // Class run: args[0] is "empty", class name is in args[1]
         if ("empty".equals(jmxArgs[0])) {
             return jmxArgs[1];
         }

@@ -42,7 +42,8 @@ public final class SshProbe {
             "ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=%d %s@%s exit",
             timeoutSeconds, user, host);
         try {
-            Process p = new ProcessBuilder("/bin/bash", "-lc", cmd).start();
+            final String fullCmd = "source /etc/profile 2>/dev/null; source ~/.zshrc 2>/dev/null; source ~/.zprofile 2>/dev/null; " + cmd;
+            Process p = new ProcessBuilder("/bin/zsh", "-c", fullCmd).start();
 
             StringBuilder err = new StringBuilder();
             try (BufferedReader er = new BufferedReader(new InputStreamReader(p.getErrorStream()))) {

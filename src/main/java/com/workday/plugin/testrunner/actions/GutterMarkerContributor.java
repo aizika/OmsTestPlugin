@@ -1,11 +1,6 @@
 package com.workday.plugin.testrunner.actions;
 
 import static com.intellij.icons.AllIcons.RunConfigurations.TestState.Run;
-import static com.workday.plugin.testrunner.actions.ReRunLastTestAction.showBalloon;
-import static com.workday.plugin.testrunner.common.Locations.LOCALHOST;
-import static com.workday.plugin.testrunner.common.Locations.SUV_RESULTS_FILE;
-import static com.workday.plugin.testrunner.common.Locations.TEST_RESULTS_FOLDER_SUV_DOCKER;
-import static com.workday.plugin.testrunner.common.Locations.getBasePath;
 import static com.workday.plugin.testrunner.common.Locations.getLocalResultFile;
 
 import org.jetbrains.annotations.NotNull;
@@ -21,14 +16,15 @@ import com.intellij.psi.PsiIdentifier;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiParameter;
 
+import com.workday.plugin.testrunner.actions.ReRunLastTestAction;
 import com.workday.plugin.testrunner.common.HostPromptDialog;
 import com.workday.plugin.testrunner.common.LastTestStorage;
 import com.workday.plugin.testrunner.common.Locations;
 import com.workday.plugin.testrunner.execution.LocalRunStrategy;
 import com.workday.plugin.testrunner.execution.OSCommands;
+import com.workday.plugin.testrunner.execution.OrsRunStrategy;
 import com.workday.plugin.testrunner.execution.ParamBuilder;
 import com.workday.plugin.testrunner.execution.RemoteJRunStrategy;
-import com.workday.plugin.testrunner.execution.RemoteRunStrategy;
 import com.workday.plugin.testrunner.execution.RunStrategy;
 import com.workday.plugin.testrunner.execution.TestRunner;
 import com.workday.plugin.testrunner.target.TestTargetExtractor;
@@ -42,7 +38,7 @@ import com.workday.plugin.testrunner.ui.UiContentDescriptor;
  * @since Jun-2025
  */
 public class GutterMarkerContributor
-    extends RunLineMarkerContributor {
+        extends RunLineMarkerContributor {
 
     @Override
     public Info getInfo(@NotNull PsiElement element) {
@@ -84,13 +80,13 @@ public class GutterMarkerContributor
             return null;
         }
 
-        String methodSignature = buildMethodSignature(classFqName, method);
+        final String methodSignature = buildMethodSignature(classFqName, method);
         final String[] methodArgs = ParamBuilder.getMethodArgs(methodSignature);
-        AnAction runLocal = createAction(method.getName(), project, methodArgs, false);
-        AnAction runRemote = createAction(method.getName(), project, methodArgs, true);
         AnAction runRemoteJ = createRemoteJAction(method.getName(), project, methodArgs);
+        AnAction runOrs = createOrsAction(method.getName(), project, methodArgs);
+        AnAction runLocalJmx = createLocalJmxAction(method.getName(), project, methodArgs);
 
-        return new Info(Run, element -> "Run OMS Test Method", runLocal, runRemote, runRemoteJ);
+        return new Info(Run, element -> "Run OMS Test Method", runRemoteJ, runOrs, runLocalJmx);
     }
 
     private Info getClassInfo(PsiClass clazz, Project project) {
@@ -105,66 +101,56 @@ public class GutterMarkerContributor
         }
 
         final String[] classArgs = ParamBuilder.getClassArgs(fqName);
-        AnAction runLocal = createAction(clazz.getName(), project, classArgs, false);
-        AnAction runRemote = createAction(clazz.getName(), project, classArgs, true);
         AnAction runRemoteJ = createRemoteJAction(clazz.getName(), project, classArgs);
+        AnAction runOrs = createOrsAction(clazz.getName(), project, classArgs);
+        AnAction runLocalJmx = createLocalJmxAction(clazz.getName(), project, classArgs);
 
-        return new Info(Run, element -> "Run OMS Test Class", runLocal, runRemote, runRemoteJ);
-    }
-
-    private @NotNull AnAction createAction(
-        final String testName, final Project project, final String[] jmxParameters, final boolean isRemote) {
-
-        return new AnAction("Run " + testName + (isRemote ? " on SUV" : " locally"), null, Run) {
-            @Override
-            public void actionPerformed(@NotNull AnActionEvent event) {
-
-                final RunStrategy runStrategy;
-                final String host;
-                final String runTabName;
-                if (isRemote) {
-                    HostPromptDialog dialog = new HostPromptDialog();
-                    if (!dialog.showAndGet()) {
-                        // canceled by user
-                        return;
-                    }
-                    host = dialog.getHost();
-                    if (host.isBlank()) {
-                        showBalloon(project, "No valid host specified");
-                        return;
-                    }
-                    runTabName = testName + "@" + host.replaceFirst("\\.workdaysuv\\.com$", "");
-                    runStrategy = new RemoteRunStrategy(new OSCommands(host), host, getLocalResultFile(),
-                        SUV_RESULTS_FILE, TEST_RESULTS_FOLDER_SUV_DOCKER);
-                }
-                else {
-                    host = LOCALHOST;
-                    runTabName = testName + "@local";
-                    runStrategy = new LocalRunStrategy(new OSCommands(host), getLocalResultFile(), getBasePath());
-                }
-                final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, runTabName);
-                ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                    LastTestStorage.setLastTestStorage(host, isRemote, runTabName, jmxParameters);
-                    TestRunner.runTest(project, host, jmxParameters, runStrategy, uiDescriptor);
-                });
-            }
-        };
+        return new Info(Run, element -> "Run OMS Test Class", runRemoteJ, runOrs, runLocalJmx);
     }
 
     private @NotNull AnAction createRemoteJAction(
-        final String testName, final Project project, final String[] jmxParameters) {
+            final String testName, final Project project, final String[] jmxParameters) {
 
         return new AnAction("Run " + testName + " (RemoteJ)", null, Run) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent event) {
+                // Get project from event — more reliable than the captured PSI project
+                final Project activeProject = event.getProject() != null ? event.getProject() : project;
                 final String runTabName = testName + "@remoteJ";
                 final String gradleTestArg = ParamBuilder.getGradleTestArg(jmxParameters);
+                final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(activeProject, runTabName);
+                // runGradleTest dispatches to EDT internally via invokeLater,
+                // so call it directly without wrapping in a pooled thread
+                LastTestStorage.setLastTestStorageRemoteJ(runTabName, jmxParameters);
+                final RemoteJRunStrategy strategy = new RemoteJRunStrategy();
+                strategy.setProject(activeProject);
+                strategy.setProcessHandler(uiDescriptor.getUiProcessHandler());
+                strategy.runGradleTest(gradleTestArg);
+            }
+        };
+    }
+
+    private @NotNull AnAction createOrsAction(
+            final String testName, final Project project, final String[] jmxParameters) {
+
+        return new AnAction("Run " + testName + " on ORS", null, Run) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent event) {
+                HostPromptDialog dialog = new HostPromptDialog();
+                if (!dialog.showAndGet()) {
+                    return;
+                }
+                final String host = dialog.getHost();
+                if (host.isBlank()) {
+                    ReRunLastTestAction.showBalloon(project, "No valid host specified");
+                    return;
+                }
+                final String runTabName = testName + "@ors:" + host.replaceFirst("\\.workdaysuv\\.com$", "");
+                final RunStrategy runStrategy = new OrsRunStrategy(new OSCommands(host), host, getLocalResultFile());
                 final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, runTabName);
                 ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                    LastTestStorage.setLastTestStorageRemoteJ(runTabName, jmxParameters);
-                    final RemoteJRunStrategy strategy = new RemoteJRunStrategy();
-                    strategy.setProcessHandler(uiDescriptor.getUiProcessHandler());
-                    strategy.runGradleTest(gradleTestArg);
+                    LastTestStorage.setLastTestStorageOrs(host, runTabName, jmxParameters);
+                    TestRunner.runTest(project, host, jmxParameters, runStrategy, uiDescriptor);
                 });
             }
         };
@@ -179,9 +165,30 @@ public class GutterMarkerContributor
             }
             paramTypes.append(parameters[i].getType().getCanonicalText());
         }
-
         return paramTypes.isEmpty()
-            ? classFqName + "@" + method.getName()
-            : classFqName + "@" + method.getName() + "(" + paramTypes + ")";
+                ? classFqName + "@" + method.getName()
+                : classFqName + "@" + method.getName() + "(" + paramTypes + ")";
     }
+
+    private @NotNull AnAction createLocalJmxAction(
+            final String testName, final Project project, final String[] jmxParameters) {
+
+        return new AnAction("Run " + testName + " (Local JMX)", null, Run) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent event) {
+                final Project activeProject = event.getProject() != null ? event.getProject() : project;
+                final String runTabName = testName + "@localJmx";
+                final String localResultFile = Locations.getLocalResultFile();
+                final String resultFolder = Locations.getBasePath();
+                final RunStrategy runStrategy = new LocalRunStrategy(
+                        new OSCommands(Locations.LOCALHOST), localResultFile, resultFolder);
+                final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(activeProject, runTabName);
+                ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                    LastTestStorage.setLastTestStorageLocalJmx(runTabName, jmxParameters);
+                    TestRunner.runTest(activeProject, Locations.LOCALHOST, jmxParameters, runStrategy, uiDescriptor);
+                });
+            }
+        };
+    }
+
 }

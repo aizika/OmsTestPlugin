@@ -4,14 +4,14 @@ plugins {
 }
 
 group = 'com.workday.plugin'
-version = '2.2-BETA'
+version = '2.3-BETA'
 
 repositories { mavenCentral() }
 
 intellij {
     version = '2024.1'
     type    = 'IC'
-    plugins = ['java']
+    plugins = ['java', 'gradle']
 }
 
 java {
