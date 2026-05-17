@@ -15,6 +15,10 @@ public class ParamBuilder {
         return new String[] { "empty", className, "empty", "empty", "empty" };
     }
 
+    public static String @NotNull [] getPackageArgs(final String packageName, final String category) {
+        return new String[] { "empty", "empty", packageName, "empty", category };
+    }
+
     /**
      * Builds JMX args for a method run.
      * Format: "com.example.MyClass@myMethod" as a single string in args[0].

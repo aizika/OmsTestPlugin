@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'com.workday.plugin'
-version = '2.3-BETA'
+version = '2.4-BETA'
 
 repositories { mavenCentral() }
 
@@ -27,7 +27,7 @@ runIde {
 patchPluginXml {
     sinceBuild  = '241'
     untilBuild  = '999.*'
-    changeNotes = 'Initial plugin to run Gradle test by class or method.'
+    changeNotes = '2.4: Test Package action (auto-detects package and @Tag category); Stop button cancels SSH/jmxterm and releases OMS lock; Testing header logged at top of each run; Stop+ReRun injected into SMTestRunner toolbar row.'
 }
 
 // Java compile options

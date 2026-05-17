@@ -43,7 +43,7 @@ public class TestRunner {
         runStrategy.setProcessHandler(processHandler);
 
         try {
-
+            processHandler.log(buildTestingHeader(jmxParams));
             final int jmxPort = runStrategy.getOmsJmxPort();
             processHandler.log("OMS JMX port: " + jmxPort);
             processHandler.log("Deleting old result files");
@@ -69,10 +69,17 @@ public class TestRunner {
                 // TODO: Investigate and remove this workaround when JMXTestExecutor is fixed
                 if (strategy.bypassJmxProxy()) {
                     final BypassTestExecutor ex = new BypassTestExecutor(strategy, jmxPort, handler);
+                    handler.setCancelHandler(ex::cancel);
                     if (strategy.isOrsContainer()) {
                         ex.runTestOrs(jmxParams);
                     } else {
                         ex.runTestOms(jmxParams);
+                    }
+                    handler.setCancelHandler(null);
+                    if (ex.isCancelled()) {
+                        handler.log("Test cancelled");
+                        handler.finish(0);
+                        return;
                     }
                 }
                 else {
@@ -112,5 +119,33 @@ public class TestRunner {
 
     private void log(final String text) {
         this.handler.log(text);
+    }
+
+    private static String buildTestingHeader(final String[] p) {
+        final String method  = p[0];
+        final String clazz   = p[1];
+        final String pkg     = p[2];
+        final String category = p[4];
+
+        final StringBuilder sb = new StringBuilder("Testing: (");
+        if (!"empty".equals(method)) {
+            // method param is "com.example.Foo@myMethod" or "com.example.Foo@myMethod(params)"
+            final int at = method.indexOf('@');
+            if (at > 0) {
+                sb.append("class=").append(method, 0, at)
+                  .append(", method=").append(method.substring(at + 1));
+            } else {
+                sb.append("method=").append(method);
+            }
+        } else if (!"empty".equals(clazz)) {
+            sb.append("class=").append(clazz);
+        } else if (!"empty".equals(pkg)) {
+            sb.append("package=").append(pkg);
+        }
+        sb.append(")");
+        if (!"empty".equals(category)) {
+            sb.append(", category=").append(category);
+        }
+        return sb.toString();
     }
 }

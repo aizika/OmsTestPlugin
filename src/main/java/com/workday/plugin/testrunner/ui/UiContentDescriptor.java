@@ -278,12 +278,22 @@ public class UiContentDescriptor
     public static class UiProcessHandler
         extends ProcessHandler {
 
+        private volatile Runnable cancelHandler;
+
+        public void setCancelHandler(final Runnable cancelHandler) {
+            this.cancelHandler = cancelHandler;
+        }
+
         public void finish(final int exitCode) {
             notifyProcessTerminated(exitCode);
         }
 
         @Override
         protected void destroyProcessImpl() {
+            final Runnable h = this.cancelHandler;
+            if (h != null) {
+                h.run();
+            }
             notifyProcessTerminated(0);
         }
 

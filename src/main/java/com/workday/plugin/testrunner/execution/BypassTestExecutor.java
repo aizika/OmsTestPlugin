@@ -23,6 +23,9 @@ public final class BypassTestExecutor {
     private final int jmxPort;
     private final UiContentDescriptor.UiProcessHandler handler;
 
+    private volatile Process runningProcess;
+    private volatile boolean cancelled;
+
     public BypassTestExecutor(final RunStrategy strategy,
                               final int jmxPort,
                               final UiContentDescriptor.UiProcessHandler handler) {
@@ -80,6 +83,43 @@ public final class BypassTestExecutor {
                 strategy.getHost(), jmxInput);
     }
 
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    /**
+     * Kills the running SSH process and sends cancelRunningTest to OMS via a separate SSH connection
+     * to release the "another test is running" lock.
+     */
+    public void cancel() {
+        cancelled = true;
+        final Process p = runningProcess;
+        if (p != null) {
+            p.destroyForcibly();
+        }
+        final Thread t = new Thread(this::sendCancelToOms, "oms-cancel");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void sendCancelToOms() {
+        try {
+            final String jmxInput = "open localhost:" + jmxPort + "\\n" +
+                                    "domain com.workday.oms\\n" +
+                                    "bean name=JunitTestListener\\n" +
+                                    "run cancelRunningTest\\n" +
+                                    "exit";
+            final String cmd = String.format(
+                    "ssh -o StrictHostKeyChecking=accept-new root@%s " +
+                    "\"echo -e \\\"%s\\\" | java -jar /usr/local/bin/jmxterm-1.0-SNAPSHOT-uber.jar\"",
+                    strategy.getHost(), jmxInput);
+            final String fullCmd = "source /etc/profile 2>/dev/null; source ~/.zshrc 2>/dev/null; source ~/.zprofile 2>/dev/null; " + cmd;
+            new ProcessBuilder("/bin/zsh", "-c", fullCmd).start().waitFor();
+        } catch (Exception ignored) {
+            // best-effort: if this fails the OMS lock will remain until the next test run clears it
+        }
+    }
+
     private void runRemoteCommand(String command,
                                   @NlsContexts.ProgressText String title) {
         this.handler.log(title);
@@ -88,6 +128,7 @@ public final class BypassTestExecutor {
             Process process = new ProcessBuilder("/bin/zsh", "-c", fullCmd)
                     .redirectErrorStream(true)
                     .start();
+            runningProcess = process;
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
@@ -99,9 +140,12 @@ public final class BypassTestExecutor {
             }
 
             process.waitFor();
+            runningProcess = null;
         }
         catch (Exception e) {
-            this.handler.error(e.getMessage());
+            if (!cancelled) {
+                this.handler.error(e.getMessage());
+            }
         }
     }
 
