@@ -1,6 +1,5 @@
 package com.workday.plugin.testrunner.ui;
 
-import java.awt.*;
 import java.io.OutputStream;
 import java.util.Collections;
 import java.util.List;
@@ -30,8 +29,11 @@ import com.intellij.execution.ui.ConsoleView;
 import com.intellij.execution.ui.RunContentDescriptor;
 import com.intellij.execution.ui.RunContentManager;
 import com.intellij.icons.AllIcons;
-import com.intellij.openapi.actionSystem.ActionManager;
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
+import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
+import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl;
 import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.project.Project;
 import com.intellij.pom.Navigatable;
@@ -81,8 +83,7 @@ public class UiContentDescriptor
         ConsoleView consoleView = createConsoleView(project, processHandler);
         installTestTreeNavigation(consoleView, project);
 
-        JPanel consolePanel = createJunitPanel(consoleView);
-        return new UiContentDescriptor(consoleView, processHandler, consolePanel, runTabName);
+        return new UiContentDescriptor(consoleView, processHandler, consoleView.getComponent(), runTabName);
     }
 
     private static void installTestTreeNavigation(ConsoleView consoleView, Project project) {
@@ -143,7 +144,7 @@ public class UiContentDescriptor
         }
     }
 
-    public static ConsoleView createConsoleView(Project project, ProcessHandler handler) {
+    public static ConsoleView createConsoleView(Project project, UiProcessHandler processHandler) {
         ParsedResultRunConfiguration config = new ParsedResultRunConfiguration(project);
         SMTRunnerConsoleProperties consoleProperties = new SMTRunnerConsoleProperties(config, "ParsedResults",
             DefaultRunExecutor.getRunExecutorInstance()) {
@@ -154,20 +155,34 @@ public class UiContentDescriptor
         };
 
         ConsoleView view = SMTestRunnerConnectionUtil.createConsole("ParsedResults", consoleProperties);
-        view.attachToProcess(handler);
+        view.attachToProcess(processHandler);
+        injectActionsIntoToolbar(view.getComponent(), processHandler);
         return view;
     }
 
-    public static JPanel createJunitPanel(ConsoleView consoleView) {
-        DefaultActionGroup actionGroup = new DefaultActionGroup();
-        actionGroup.add(new ReRunLastTestAction());
-        JComponent toolbar = ActionManager.getInstance().createActionToolbar("GradleTestToolbar", actionGroup,
-            false).getComponent();
+    private static void injectActionsIntoToolbar(JComponent viewComp, UiProcessHandler processHandler) {
+        ActionToolbarImpl toolbar = UIUtil.findComponentOfType(viewComp, ActionToolbarImpl.class);
+        if (toolbar == null || !(toolbar.getActionGroup() instanceof DefaultActionGroup dag)) {
+            return;
+        }
+        dag.addSeparator();
+        dag.add(new AnAction("Stop", "Stop the running test", AllIcons.Actions.Suspend) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                processHandler.destroyProcess();
+            }
 
-        JPanel consolePanel = new JPanel(new BorderLayout());
-        consolePanel.add(toolbar, BorderLayout.WEST);
-        consolePanel.add(consoleView.getComponent(), BorderLayout.CENTER);
-        return consolePanel;
+            @Override
+            public void update(@NotNull AnActionEvent e) {
+                e.getPresentation().setEnabled(!processHandler.isProcessTerminated());
+            }
+
+            @Override
+            public @NotNull ActionUpdateThread getActionUpdateThread() {
+                return ActionUpdateThread.EDT;
+            }
+        });
+        dag.add(new ReRunLastTestAction());
     }
 
     public static UiContentDescriptor createUiDescriptor(final Project project, final String runTabName) {
