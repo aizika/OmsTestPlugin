@@ -1,5 +1,5 @@
 <h1>
-  <img src="https://raw.githubusercontent.com/aizika/OmsTestPlugin/master/src/main/resources/META-INF/oms-logo.png" alt="Plugin Icon" width="40" style="vertical-align: middle;"/>
+  <img src="https://ghe.megaleo.com/alexander-aizikivsky/oms-test-plugin/raw/master/src/main/resources/META-INF/oms-logo.png" alt="Plugin Icon" width="40" style="vertical-align: middle;"/>
   OMS Test Runner IntelliJ Plugin
 </h1>
 
@@ -10,7 +10,11 @@ It also includes a one-click option to re-run the last test.
 
 ---
 ## 🚀 Get the Plugin
-Build from source:
+
+#### Download:
+Get the latest plugin ZIP from the [latest release](https://ghe.megaleo.com/alexander-aizikivsky/oms-test-plugin/releases/latest).
+
+#### Or build from source:
 
 ```
 ./gradlew clean buildPlugin
