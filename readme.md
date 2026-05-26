@@ -46,7 +46,7 @@ build/distributions/
 
 The plugin extends IntelliJ's **native gutter icons** for test classes and methods by adding custom OMS actions directly into the standard popup menu.
 
-When you click the green triangle gutter icon next to a test method or class, IntelliJ displays its default test execution options. The plugin injects two additional **OMS-specific actions**:
+When you click the green triangle gutter icon next to a test method or class, IntelliJ displays its default test execution options. The plugin injects additional **OMS-specific actions**:
 
 ```
 Run 'FormatDateSpartaTest'                         |
@@ -55,6 +55,7 @@ Debug 'FormatDateSpartaTest'                       |  Native IntelliJ actions
 ----
 OMS
 ├─ ▶️ Run FormatDateSpartaTest (SUV JMX)            |  SSH + JMX, direct SUV access
+├─ ▶️ Test Package (SUV JMX)                        |  SSH + JMX, runs entire package
 ├─ ▶️ Run FormatDateSpartaTest (Local JMX)          |  JMX, local ORS/OTS instance
 └─ ▶️ Run FormatDateSpartaTest (RemoteJ)            |  Gradle-based, local or tunneled SUV
 ```
