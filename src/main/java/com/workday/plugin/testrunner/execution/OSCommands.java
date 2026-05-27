@@ -143,8 +143,12 @@ public class OSCommands {
     }
 
     private int parsePort(String output) {
+        String trimmed = output.trim();
+        if (trimmed.isEmpty()) {
+            throw new RuntimeException("Could not find local ORS/OTS JMX port — is ORS/OTS running?");
+        }
         try {
-            return Integer.parseInt(output.trim());
+            return Integer.parseInt(trimmed);
         } catch (NumberFormatException e) {
             throw new RuntimeException("Error parsing port from output: " + output, e);
         }
