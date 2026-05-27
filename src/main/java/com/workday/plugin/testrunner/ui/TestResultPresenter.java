@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import com.intellij.openapi.application.ApplicationManager;
@@ -84,46 +85,88 @@ public class TestResultPresenter {
     }
 
     /**
-     * Renders a 3-level test tree: class → method → parameterized variant.
-     * Non-parameterized tests appear directly under the class node (2 levels).
+     * Renders a 4-level test tree: package → class → method → parameterized variant.
+     * Non-parameterized tests appear directly under the class node (3 levels).
      */
     private void displayTestResults(List<TestMethodResult> results, UiContentDescriptor.UiProcessHandler processHandler) {
-        // Group by class name, sorted alphabetically
         Map<String, List<TestMethodResult>> byClass = new TreeMap<>(
                 results.stream().collect(Collectors.groupingBy(TestMethodResult::className)));
 
-        for (Map.Entry<String, List<TestMethodResult>> classEntry : byClass.entrySet()) {
-            String className = classEntry.getKey();
-            String suiteName = className.substring(className.lastIndexOf('.') + 1);
+        // Build package hierarchy.
+        // childPkgs: parent pkg → immediate child pkgs; virtual root "" → top-level pkgs.
+        // pkgClasses: pkg → class FQNs whose package is exactly pkg.
+        TreeMap<String, TreeSet<String>> childPkgs = new TreeMap<>();
+        TreeMap<String, TreeSet<String>> pkgClasses = new TreeMap<>();
 
-            processHandler.log("##teamcity[testSuiteStarted name='" + escapeTc(suiteName)
-                    + "' locationHint='java:" + className + "']");
+        for (String className : byClass.keySet()) {
+            int dot = className.lastIndexOf('.');
+            String pkg = dot >= 0 ? className.substring(0, dot) : "";
+            pkgClasses.computeIfAbsent(pkg, k -> new TreeSet<>()).add(className);
 
-            // Group by bare method name (strip everything from first ( or [), sorted alphabetically
-            Map<String, List<TestMethodResult>> byMethod = new TreeMap<>(
-                    classEntry.getValue().stream().collect(Collectors.groupingBy(r -> methodNameOf(r.name()))));
-
-            for (Map.Entry<String, List<TestMethodResult>> methodEntry : byMethod.entrySet()) {
-                String methodName = methodEntry.getKey();
-                List<TestMethodResult> variants = methodEntry.getValue();
-
-                boolean isParameterized = variants.size() > 1
-                        || !methodName.equals(variants.get(0).name());
-
-                if (isParameterized) {
-                    processHandler.log("##teamcity[testSuiteStarted name='" + escapeTc(methodName)
-                            + "' locationHint='java:" + className + "#" + methodName + "']");
-                    variants.stream()
-                            .sorted(Comparator.comparing(TestMethodResult::name))
-                            .forEach(v -> displaySingleResult(v, methodName, processHandler));
-                    processHandler.log("##teamcity[testSuiteFinished name='" + escapeTc(methodName) + "']");
-                } else {
-                    displaySingleResult(variants.get(0), methodName, processHandler);
-                }
+            String child = pkg;
+            while (!child.isEmpty()) {
+                int lastDot = child.lastIndexOf('.');
+                String parent = lastDot >= 0 ? child.substring(0, lastDot) : "";
+                childPkgs.computeIfAbsent(parent, k -> new TreeSet<>()).add(child);
+                childPkgs.computeIfAbsent(child, k -> new TreeSet<>());
+                child = parent;
             }
-
-            processHandler.log("##teamcity[testSuiteFinished name='" + escapeTc(suiteName) + "']");
         }
+
+        // Render root packages (children of the virtual root "")
+        for (String rootPkg : childPkgs.getOrDefault("", new TreeSet<>())) {
+            renderPackageSuite(rootPkg, childPkgs, pkgClasses, byClass, processHandler);
+        }
+        // Classes in the default (no-name) package
+        for (String className : pkgClasses.getOrDefault("", new TreeSet<>())) {
+            renderClassSuite(className, byClass.get(className), processHandler);
+        }
+    }
+
+    private void renderPackageSuite(String pkg,
+            TreeMap<String, TreeSet<String>> childPkgs,
+            TreeMap<String, TreeSet<String>> pkgClasses,
+            Map<String, List<TestMethodResult>> byClass,
+            UiContentDescriptor.UiProcessHandler processHandler) {
+        processHandler.log("##teamcity[testSuiteStarted name='" + escapeTc(pkg)
+                + "' locationHint='pkg:" + pkg + "']");
+        for (String subPkg : childPkgs.getOrDefault(pkg, new TreeSet<>())) {
+            renderPackageSuite(subPkg, childPkgs, pkgClasses, byClass, processHandler);
+        }
+        for (String className : pkgClasses.getOrDefault(pkg, new TreeSet<>())) {
+            renderClassSuite(className, byClass.get(className), processHandler);
+        }
+        processHandler.log("##teamcity[testSuiteFinished name='" + escapeTc(pkg) + "']");
+    }
+
+    private void renderClassSuite(String className, List<TestMethodResult> results,
+            UiContentDescriptor.UiProcessHandler processHandler) {
+        String suiteName = className.substring(className.lastIndexOf('.') + 1);
+
+        processHandler.log("##teamcity[testSuiteStarted name='" + escapeTc(suiteName)
+                + "' locationHint='java:" + className + "']");
+
+        Map<String, List<TestMethodResult>> byMethod = new TreeMap<>(
+                results.stream().collect(Collectors.groupingBy(r -> methodNameOf(r.name()))));
+
+        for (Map.Entry<String, List<TestMethodResult>> methodEntry : byMethod.entrySet()) {
+            String methodName = methodEntry.getKey();
+            List<TestMethodResult> variants = methodEntry.getValue();
+            boolean isParameterized = variants.size() > 1 || !methodName.equals(variants.get(0).name());
+
+            if (isParameterized) {
+                processHandler.log("##teamcity[testSuiteStarted name='" + escapeTc(methodName)
+                        + "' locationHint='java:" + className + "#" + methodName + "']");
+                variants.stream()
+                        .sorted(Comparator.comparing(TestMethodResult::name))
+                        .forEach(v -> displaySingleResult(v, methodName, processHandler));
+                processHandler.log("##teamcity[testSuiteFinished name='" + escapeTc(methodName) + "']");
+            } else {
+                displaySingleResult(variants.get(0), methodName, processHandler);
+            }
+        }
+
+        processHandler.log("##teamcity[testSuiteFinished name='" + escapeTc(suiteName) + "']");
     }
 
     private void displaySingleResult(TestMethodResult result, String methodName,

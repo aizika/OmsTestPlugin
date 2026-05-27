@@ -47,7 +47,7 @@ public class RunSelectedInRemoteJAction extends AnAction {
     private final Project project;
 
     public RunSelectedInRemoteJAction(JComponent viewComp, Project project) {
-        super("Run", "Run selected test", AllIcons.Actions.Execute);
+        super("Run selected", "Run selected test", AllIcons.Actions.Execute);
         this.viewComp = viewComp;
         this.project = project;
     }
@@ -132,7 +132,7 @@ public class RunSelectedInRemoteJAction extends AnAction {
         if (proxy == null) return null;
 
         String url = proxy.getLocationUrl();
-        if (url == null || !url.startsWith("java:")) return null;
+        if (url == null || (!url.startsWith("java:") && !url.startsWith("pkg:"))) return null;
 
         return proxy;
     }
@@ -152,7 +152,15 @@ public class RunSelectedInRemoteJAction extends AnAction {
 
     @Nullable
     private TestLocation parseLocation(AbstractTestProxy proxy) {
-        String javaPath = proxy.getLocationUrl().substring("java:".length());
+        String url = proxy.getLocationUrl();
+
+        if (url.startsWith("pkg:")) {
+            String packageName = url.substring("pkg:".length());
+            return new TestLocation(null, null, null,
+                    packageName + ".*", packageName + "@run", packageName);
+        }
+
+        String javaPath = url.substring("java:".length());
         String[] parts = javaPath.split("#", 2);
         String className = parts[0];
         if (className.isBlank()) return null;
@@ -160,14 +168,14 @@ public class RunSelectedInRemoteJAction extends AnAction {
         String shortClass = className.substring(className.lastIndexOf('.') + 1);
 
         if (parts.length < 2 || parts[1].isBlank()) {
-            return new TestLocation(className, null, className, className, shortClass + "@run");
+            return new TestLocation(className, null, null, className, shortClass + "@run", null);
         }
 
         String methodName = parts[1];
         String paramSuffix = buildParamTypesSuffix(className, methodName);
         String jmxMethodSig = className + "@" + methodName + paramSuffix;
         return new TestLocation(className, methodName, jmxMethodSig,
-                className + "." + methodName, methodName + "@run");
+                className + "." + methodName, methodName + "@run", null);
     }
 
     /** Looks up parameter types via PSI so ORS can resolve parameterized test methods. */
@@ -185,12 +193,15 @@ public class RunSelectedInRemoteJAction extends AnAction {
         return "(" + paramTypes + ")";
     }
 
-    private record TestLocation(String className, @Nullable String methodName,
-                                String jmxMethodSig, String gradleArg, String tabName) {
+    private record TestLocation(@Nullable String className, @Nullable String methodName,
+                                @Nullable String jmxMethodSig, String gradleArg, String tabName,
+                                @Nullable String packageName) {
+        boolean isPackage() { return packageName != null; }
+
         String[] toJmxArgs() {
-            return methodName != null
-                    ? ParamBuilder.getMethodArgs(jmxMethodSig)
-                    : ParamBuilder.getClassArgs(className);
+            if (isPackage()) return ParamBuilder.getPackageArgs(packageName, "empty");
+            if (methodName != null) return ParamBuilder.getMethodArgs(jmxMethodSig);
+            return ParamBuilder.getClassArgs(className);
         }
     }
 }
