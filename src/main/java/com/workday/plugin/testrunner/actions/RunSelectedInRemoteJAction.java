@@ -1,5 +1,8 @@
 package com.workday.plugin.testrunner.actions;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 
@@ -14,6 +17,9 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.psi.JavaPsiFacade;
+import com.intellij.psi.PsiMethod;
+import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.util.ui.UIUtil;
 
 import com.workday.plugin.testrunner.common.LastTestStorage;
@@ -49,7 +55,7 @@ public class RunSelectedInRemoteJAction extends AnAction {
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
         AbstractTestProxy proxy = getSelectedProxy();
-        if (proxy == null) return;
+        if (proxy == null || isVariantLeaf(proxy)) return;
 
         TestLocation loc = parseLocation(proxy);
         if (loc == null) return;
@@ -97,8 +103,9 @@ public class RunSelectedInRemoteJAction extends AnAction {
     @Override
     public void update(@NotNull AnActionEvent e) {
         AbstractTestProxy proxy = getSelectedProxy();
-        e.getPresentation().setEnabled(proxy != null);
-        if (proxy != null) {
+        boolean enabled = proxy != null && !isVariantLeaf(proxy);
+        e.getPresentation().setEnabled(enabled);
+        if (enabled) {
             LastTestStorage.LastTestEntry lastEntry = LastTestStorage.getLastTestEntry();
             String strategy = lastEntry == null || lastEntry.isRemoteJ() ? "RemoteJ"
                     : lastEntry.isLocalJmx() ? "Local JMX"
@@ -130,6 +137,19 @@ public class RunSelectedInRemoteJAction extends AnAction {
         return proxy;
     }
 
+    /**
+     * Returns true if proxy is an individual parameterized variant (leaf whose parent is
+     * a method-group suite). Such nodes share the same locationUrl as the method group and
+     * cannot be targeted individually, so the Run button is disabled for them.
+     */
+    private boolean isVariantLeaf(AbstractTestProxy proxy) {
+        if (!proxy.getChildren().isEmpty()) return false;
+        AbstractTestProxy parent = proxy.getParent();
+        if (parent == null) return false;
+        String parentUrl = parent.getLocationUrl();
+        return parentUrl != null && parentUrl.contains("#");
+    }
+
     @Nullable
     private TestLocation parseLocation(AbstractTestProxy proxy) {
         String javaPath = proxy.getLocationUrl().substring("java:".length());
@@ -140,19 +160,36 @@ public class RunSelectedInRemoteJAction extends AnAction {
         String shortClass = className.substring(className.lastIndexOf('.') + 1);
 
         if (parts.length < 2 || parts[1].isBlank()) {
-            return new TestLocation(className, null, className, shortClass + "@run");
+            return new TestLocation(className, null, className, className, shortClass + "@run");
         }
 
         String methodName = parts[1];
-        return new TestLocation(className, methodName,
+        String paramSuffix = buildParamTypesSuffix(className, methodName);
+        String jmxMethodSig = className + "@" + methodName + paramSuffix;
+        return new TestLocation(className, methodName, jmxMethodSig,
                 className + "." + methodName, methodName + "@run");
     }
 
+    /** Looks up parameter types via PSI so ORS can resolve parameterized test methods. */
+    private String buildParamTypesSuffix(String className, String methodName) {
+        com.intellij.psi.PsiClass psiClass = JavaPsiFacade.getInstance(project)
+                .findClass(className, GlobalSearchScope.allScope(project));
+        if (psiClass == null) return "";
+        PsiMethod[] methods = psiClass.findMethodsByName(methodName, false);
+        if (methods.length == 0) return "";
+        com.intellij.psi.PsiParameter[] params = methods[0].getParameterList().getParameters();
+        if (params.length == 0) return "";
+        String paramTypes = Arrays.stream(params)
+                .map(p -> p.getType().getCanonicalText())
+                .collect(Collectors.joining(","));
+        return "(" + paramTypes + ")";
+    }
+
     private record TestLocation(String className, @Nullable String methodName,
-                                String gradleArg, String tabName) {
+                                String jmxMethodSig, String gradleArg, String tabName) {
         String[] toJmxArgs() {
             return methodName != null
-                    ? ParamBuilder.getMethodArgs(className + "@" + methodName)
+                    ? ParamBuilder.getMethodArgs(jmxMethodSig)
                     : ParamBuilder.getClassArgs(className);
         }
     }
