@@ -38,7 +38,7 @@ public class ReRunLastTestAction
 
     @SuppressWarnings("ActionPresentationInstantiatedInCtor")  // this is the only way to show the correct icon
     public ReRunLastTestAction() {
-        super("Re-Run OMS Test", "Re-runs the last executed OMS test",
+        super("Rerun", "Rerun last test",
                 IconLoader.getIcon("icons/rerun.svg", ReRunLastTestAction.class));
     }
 

@@ -3,8 +3,11 @@ package com.workday.plugin.testrunner.ui;
 import static com.workday.plugin.testrunner.common.Locations.*;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import com.intellij.openapi.application.ApplicationManager;
@@ -32,77 +35,134 @@ public class TestResultPresenter {
         }
 
         ApplicationManager.getApplication().invokeLater(() -> {
-            displayTestSuiteResult(suite, processHandler);
+            displayTestResults(suite.results(), processHandler);
             int exitCode = (suite.failures() > 0 || suite.errors() > 0) ? 1 : 0;
             processHandler.finish(exitCode);
         });
     }
 
-    private void displayTestSuiteResult(TestSuiteResult suite, UiContentDescriptor.UiProcessHandler processHandler) {
-        Map<String, List<TestMethodResult>> grouped = suite.results().stream()
-                .collect(Collectors.groupingBy(TestMethodResult::className));
+    /**
+     * Parses all TEST-*.xml files from a Gradle test results directory and renders
+     * individual test methods in the test tree. Called by RemoteJRunStrategy after
+     * the Gradle process exits.
+     */
+    public void displayGradleResults(String resultDir, UiContentDescriptor.UiProcessHandler processHandler, int exitCode) {
+        File dir = new File(resultDir);
+        File[] xmlFiles = dir.listFiles((d, name) -> name.startsWith("TEST-") && name.endsWith(".xml"));
 
-        for (Map.Entry<String, List<TestMethodResult>> entry : grouped.entrySet()) {
-            String className = entry.getKey();
-            List<TestMethodResult> results = entry.getValue();
+        if (xmlFiles == null || xmlFiles.length == 0) {
+            processHandler.log("No test result XML files found in " + resultDir);
+            processHandler.finish(exitCode);
+            return;
+        }
+
+        XmlResultParser parser = new XmlResultParser();
+        List<TestMethodResult> allResults = new ArrayList<>();
+        boolean anyFailure = false;
+
+        for (File xmlFile : xmlFiles) {
+            TestSuiteResult suite = parser.parseTestSuite(xmlFile);
+            if (suite != null) {
+                allResults.addAll(suite.results());
+                if (suite.failures() > 0 || suite.errors() > 0) {
+                    anyFailure = true;
+                }
+            }
+        }
+
+        if (allResults.isEmpty()) {
+            processHandler.log("Warning: no test results parsed from " + resultDir);
+            processHandler.finish(exitCode);
+            return;
+        }
+
+        final int finalExitCode = anyFailure ? 1 : exitCode;
+        ApplicationManager.getApplication().invokeLater(() -> {
+            displayTestResults(allResults, processHandler);
+            processHandler.finish(finalExitCode);
+        });
+    }
+
+    /**
+     * Renders a 3-level test tree: class → method → parameterized variant.
+     * Non-parameterized tests appear directly under the class node (2 levels).
+     */
+    private void displayTestResults(List<TestMethodResult> results, UiContentDescriptor.UiProcessHandler processHandler) {
+        // Group by class name, sorted alphabetically
+        Map<String, List<TestMethodResult>> byClass = new TreeMap<>(
+                results.stream().collect(Collectors.groupingBy(TestMethodResult::className)));
+
+        for (Map.Entry<String, List<TestMethodResult>> classEntry : byClass.entrySet()) {
+            String className = classEntry.getKey();
             String suiteName = className.substring(className.lastIndexOf('.') + 1);
-            String location = "java:" + className;
 
-            processHandler.log(
-                    "##teamcity[testSuiteStarted name='" + suiteName + "' locationHint='" + location + "']");
+            processHandler.log("##teamcity[testSuiteStarted name='" + escapeTc(suiteName)
+                    + "' locationHint='java:" + className + "']");
 
-            Map<String, TestMethodResult> resultMap = results.stream()
-                    .collect(Collectors.toMap(TestMethodResult::name, r -> r));
-            displayResults(resultMap, processHandler);
+            // Group by bare method name (strip everything from first ( or [), sorted alphabetically
+            Map<String, List<TestMethodResult>> byMethod = new TreeMap<>(
+                    classEntry.getValue().stream().collect(Collectors.groupingBy(r -> methodNameOf(r.name()))));
 
-            processHandler.log(
-                    "##teamcity[testSuiteFinished name='" + suiteName + "']");
+            for (Map.Entry<String, List<TestMethodResult>> methodEntry : byMethod.entrySet()) {
+                String methodName = methodEntry.getKey();
+                List<TestMethodResult> variants = methodEntry.getValue();
+
+                boolean isParameterized = variants.size() > 1
+                        || !methodName.equals(variants.get(0).name());
+
+                if (isParameterized) {
+                    processHandler.log("##teamcity[testSuiteStarted name='" + escapeTc(methodName)
+                            + "' locationHint='java:" + className + "#" + methodName + "']");
+                    variants.stream()
+                            .sorted(Comparator.comparing(TestMethodResult::name))
+                            .forEach(v -> displaySingleResult(v, methodName, processHandler));
+                    processHandler.log("##teamcity[testSuiteFinished name='" + escapeTc(methodName) + "']");
+                } else {
+                    displaySingleResult(variants.get(0), methodName, processHandler);
+                }
+            }
+
+            processHandler.log("##teamcity[testSuiteFinished name='" + escapeTc(suiteName) + "']");
         }
     }
 
-    private void displayResults(Map<String, TestMethodResult> results, UiContentDescriptor.UiProcessHandler processHandler) {
-        results.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(Map.Entry::getValue)
-                .forEach(result -> {
-                    String escapedName = escapeTc(result.name());
-                    String strippedBracketsName = result.name().replaceAll("\\(.*?\\)|\\[.*?]", "");
-                    String location = "java:" + result.className() + "#" + strippedBracketsName;
+    private void displaySingleResult(TestMethodResult result, String methodName,
+                                     UiContentDescriptor.UiProcessHandler processHandler) {
+        String escapedName = escapeTc(result.name());
+        String location = "java:" + result.className() + "#" + methodName;
 
-                    processHandler.log(
-                            "##teamcity[testStarted name='" + escapedName + "' captureStandardOutput='true' locationHint='"
-                                    + location + "']");
+        processHandler.log("##teamcity[testStarted name='" + escapedName
+                + "' captureStandardOutput='true' locationHint='" + location + "']");
 
-                    switch (result.status()) {
-                        case FAILED:
-                            processHandler.log(
-                                    String.format("##teamcity[testFailed name='%s' message='%s' details='%s']",
-                                            escapedName,
-                                            escapeTc(defaultIfNull(result.failureMessage(), "Failed")),
-                                            escapeTc(defaultIfNull(result.failureDetails(), ""))));
-                            break;
-                        case ERROR:
-                            processHandler.log(
-                                    String.format("##teamcity[testFailed name='%s' message='%s' details='%s']",
-                                            escapedName,
-                                            escapeTc(defaultIfNull(result.errorMessage(), "Error")),
-                                            escapeTc(defaultIfNull(result.errorDetails(), ""))));
-                            break;
-                        case SKIPPED:
-                            processHandler.log(
-                                    String.format("##teamcity[testIgnored name='%s' message='%s']",
-                                            escapedName,
-                                            escapeTc(defaultIfNull(result.skippedMessage(), "Skipped"))));
-                            break;
-                        default:
-                            break;
-                    }
+        switch (result.status()) {
+            case FAILED:
+                processHandler.log(String.format("##teamcity[testFailed name='%s' message='%s' details='%s']",
+                        escapedName,
+                        escapeTc(defaultIfNull(result.failureMessage(), "Failed")),
+                        escapeTc(defaultIfNull(result.failureDetails(), ""))));
+                break;
+            case ERROR:
+                processHandler.log(String.format("##teamcity[testFailed name='%s' message='%s' details='%s']",
+                        escapedName,
+                        escapeTc(defaultIfNull(result.errorMessage(), "Error")),
+                        escapeTc(defaultIfNull(result.errorDetails(), ""))));
+                break;
+            case SKIPPED:
+                processHandler.log(String.format("##teamcity[testIgnored name='%s' message='%s']",
+                        escapedName,
+                        escapeTc(defaultIfNull(result.skippedMessage(), "Skipped"))));
+                break;
+            default:
+                break;
+        }
 
-                    processHandler.log(
-                            String.format("##teamcity[testFinished name='%s' duration='%s']",
-                                    escapedName,
-                                    result.timeInMillisStr()));
-                });
+        processHandler.log(String.format("##teamcity[testFinished name='%s' duration='%s']",
+                escapedName, result.timeInMillisStr()));
+    }
+
+    /** Strips parameter types and variant info to get the bare Java method name. */
+    static String methodNameOf(String testName) {
+        return testName.replaceAll("[\\[(].*", "").trim();
     }
 
     private String escapeTc(String s) {

@@ -89,7 +89,7 @@ Click **Run X (Local JMX)** — no host prompt, runs immediately.
 
 ### Mode 3: RemoteJ
 
-Uses Gradle's `remoteServerTest` task to distribute tests via the ORS RemoteJ endpoint (port 12701).
+Uses Gradle's `remoteServerTest` task to distribute tests via the ORS RemoteJ HTTP endpoint (port 12090).
 
 **When to use:**
 - Running against a **local ORS** instance (no configuration required)
@@ -122,6 +122,20 @@ The Host Prompt dialog includes an editable drop-down with previously used hosts
 ### 👀 Test Panel Overview
 
 Results appear in the standard **Run tool window**. Failed and ignored tests display the failure reason with clickable stack traces.
+
+The test tree groups results by class, then by method. Parameterized tests expand into a third level showing each individual variant:
+
+```
+▼ MyTestClass
+  ▼ myParameterizedTest          (method node — click to run all variants)
+      myParameterizedTest(1)     (variant leaf)
+      myParameterizedTest(2)
+  ✓ someOtherTest
+```
+
+#### Run Button
+
+A **Run** button in the test results toolbar lets you re-execute any selected node from the test tree using the **same strategy that was used most recently** (SUV JMX, Local JMX, or RemoteJ). This lets you quickly re-run a specific failing test without going back to the gutter menu.
 
 ---
 

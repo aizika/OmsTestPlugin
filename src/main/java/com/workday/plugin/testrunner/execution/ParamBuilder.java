@@ -37,8 +37,9 @@ public class ParamBuilder {
         if ("empty".equals(jmxArgs[0])) {
             return jmxArgs[1];
         }
-        // Method run: args[0] is "com.example.MyClass@myMethod"
-        return jmxArgs[0].replace("@", ".");
+        // Method run: args[0] is "com.example.MyClass@myMethod" or "com.example.MyClass@myMethod(ParamType)"
+        // Gradle --tests does not accept parameter types, so strip from '(' onwards
+        return jmxArgs[0].replace("@", ".").replaceAll("\\(.*", "");
     }
 
 }

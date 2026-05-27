@@ -44,6 +44,7 @@ import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.util.ui.UIUtil;
 
 import com.workday.plugin.testrunner.actions.ReRunLastTestAction;
+import com.workday.plugin.testrunner.actions.RunSelectedInRemoteJAction;
 
 /**
  * This class represents a UI content descriptor for JUnit test results in Run Tool Window.
@@ -156,11 +157,11 @@ public class UiContentDescriptor
 
         ConsoleView view = SMTestRunnerConnectionUtil.createConsole("ParsedResults", consoleProperties);
         view.attachToProcess(processHandler);
-        injectActionsIntoToolbar(view.getComponent(), processHandler);
+        injectActionsIntoToolbar(view.getComponent(), processHandler, project);
         return view;
     }
 
-    private static void injectActionsIntoToolbar(JComponent viewComp, UiProcessHandler processHandler) {
+    private static void injectActionsIntoToolbar(JComponent viewComp, UiProcessHandler processHandler, Project project) {
         ActionToolbarImpl toolbar = UIUtil.findComponentOfType(viewComp, ActionToolbarImpl.class);
         if (toolbar == null || !(toolbar.getActionGroup() instanceof DefaultActionGroup dag)) {
             return;
@@ -183,6 +184,7 @@ public class UiContentDescriptor
             }
         });
         dag.add(new ReRunLastTestAction());
+        dag.add(new RunSelectedInRemoteJAction(viewComp, project));
     }
 
     public static UiContentDescriptor createUiDescriptor(final Project project, final String runTabName) {
