@@ -12,11 +12,13 @@ import org.jetbrains.annotations.Nullable;
 import com.intellij.execution.testframework.AbstractTestProxy;
 import com.intellij.execution.testframework.sm.runner.SMTRunnerNodeDescriptor;
 import com.intellij.icons.AllIcons;
+import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.search.GlobalSearchScope;
@@ -43,6 +45,8 @@ import com.workday.plugin.testrunner.ui.UiContentDescriptor;
  */
 public class RunSelectedInRemoteJAction extends AnAction {
 
+    private static final String KEY_LAST_CATEGORY = "oms.lastCategory";
+
     private final JComponent viewComp;
     private final Project project;
 
@@ -62,6 +66,15 @@ public class RunSelectedInRemoteJAction extends AnAction {
 
         LastTestStorage.LastTestEntry lastEntry = LastTestStorage.getLastTestEntry();
 
+        // For package nodes via JMX: prompt for category before opening a new tab.
+        // RemoteJ ignores category (Gradle --tests has no category filter).
+        String[] packageJmxParams = null;
+        if (loc.isPackage() && lastEntry != null && (lastEntry.isLocalJmx() || lastEntry.isOrs())) {
+            String category = promptForCategory();
+            if (category == null) return; // cancelled
+            packageJmxParams = ParamBuilder.getPackageArgs(loc.packageName(), category);
+        }
+
         UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(project, loc.tabName);
         UiContentDescriptor.UiProcessHandler handler = uiDescriptor.getUiProcessHandler();
 
@@ -72,7 +85,7 @@ public class RunSelectedInRemoteJAction extends AnAction {
 
         } else if (lastEntry.isLocalJmx()) {
             Locations.setBasePath(lastEntry.getBasePath());
-            String[] jmxParams = loc.toJmxArgs();
+            final String[] jmxParams = packageJmxParams != null ? packageJmxParams : loc.toJmxArgs();
             ApplicationManager.getApplication().executeOnPooledThread(() -> {
                 RunStrategy runStrategy = new LocalRunStrategy(
                         new OSCommands(Locations.LOCALHOST), Locations.getLocalResultFile(), Locations.getBasePath());
@@ -86,7 +99,7 @@ public class RunSelectedInRemoteJAction extends AnAction {
                 return;
             }
             Locations.setBasePath(lastEntry.getBasePath());
-            String[] jmxParams = loc.toJmxArgs();
+            final String[] jmxParams = packageJmxParams != null ? packageJmxParams : loc.toJmxArgs();
             ApplicationManager.getApplication().executeOnPooledThread(() -> {
                 SshProbe.Result probe = SshProbe.probe(host);
                 if (probe.exitCode != 0) {
@@ -98,6 +111,25 @@ public class RunSelectedInRemoteJAction extends AnAction {
                 TestRunner.runTest(project, host, jmxParams, runStrategy, uiDescriptor);
             });
         }
+    }
+
+    /** Prompts for a test category, pre-filling with the last used value. Returns null if cancelled. */
+    @Nullable
+    private String promptForCategory() {
+        String last = PropertiesComponent.getInstance().getValue(KEY_LAST_CATEGORY, "");
+        String input = Messages.showInputDialog(
+                project,
+                "Test category (e.g. OMSBI, OMSBASE):",
+                "Run Package",
+                null,
+                last,
+                null);
+        if (input == null) return null;
+        input = input.trim();
+        if (!input.isEmpty()) {
+            PropertiesComponent.getInstance().setValue(KEY_LAST_CATEGORY, input);
+        }
+        return input.isEmpty() ? "empty" : input;
     }
 
     @Override
@@ -156,8 +188,9 @@ public class RunSelectedInRemoteJAction extends AnAction {
 
         if (url.startsWith("pkg:")) {
             String packageName = url.substring("pkg:".length());
+            String shortPkg = packageName.substring(packageName.lastIndexOf('.') + 1);
             return new TestLocation(null, null, null,
-                    packageName + ".*", packageName + "@run", packageName);
+                    packageName + ".*", shortPkg + "@run", packageName);
         }
 
         String javaPath = url.substring("java:".length());
