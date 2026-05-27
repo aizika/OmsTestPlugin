@@ -152,7 +152,10 @@ public class TestResultPresenter {
         for (Map.Entry<String, List<TestMethodResult>> methodEntry : byMethod.entrySet()) {
             String methodName = methodEntry.getKey();
             List<TestMethodResult> variants = methodEntry.getValue();
-            boolean isParameterized = variants.size() > 1 || !methodName.equals(variants.get(0).name());
+            // JUnit 5 appends "()" to non-parameterized test display names in Gradle XML.
+            // Strip trailing "()" before comparing so those tests don't get a spurious suite node.
+            String rawName = variants.get(0).name().replaceAll("\\(\\)\\s*$", "").trim();
+            boolean isParameterized = variants.size() > 1 || !methodName.equals(rawName);
 
             if (isParameterized) {
                 processHandler.log("##teamcity[testSuiteStarted name='" + escapeTc(methodName)
