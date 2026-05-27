@@ -1,6 +1,8 @@
 package com.workday.plugin.testrunner.actions;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.swing.*;
@@ -70,7 +72,7 @@ public class RunSelectedInRemoteJAction extends AnAction {
         // RemoteJ ignores category (Gradle --tests has no category filter).
         String[] packageJmxParams = null;
         if (loc.isPackage() && lastEntry != null && (lastEntry.isLocalJmx() || lastEntry.isOrs())) {
-            String category = promptForCategory();
+            String category = promptForCategory(proxy);
             if (category == null) return; // cancelled
             packageJmxParams = ParamBuilder.getPackageArgs(loc.packageName(), category);
         }
@@ -113,16 +115,23 @@ public class RunSelectedInRemoteJAction extends AnAction {
         }
     }
 
-    /** Prompts for a test category, pre-filling with the last used value. Returns null if cancelled. */
+    /**
+     * Prompts for a test category. Pre-fills with the category guessed from the single class
+     * in the package (via its @Tag annotation), falling back to the last saved value.
+     * Returns null if the dialog is cancelled.
+     */
     @Nullable
-    private String promptForCategory() {
+    private String promptForCategory(AbstractTestProxy packageProxy) {
+        String guessed = guessCategory(packageProxy);
         String last = PropertiesComponent.getInstance().getValue(KEY_LAST_CATEGORY, "");
+        String initial = guessed != null ? guessed : last;
+
         String input = Messages.showInputDialog(
                 project,
                 "Test category (e.g. OMSBI, OMSBASE):",
                 "Run Package",
                 null,
-                last,
+                initial,
                 null);
         if (input == null) return null;
         input = input.trim();
@@ -130,6 +139,45 @@ public class RunSelectedInRemoteJAction extends AnAction {
             PropertiesComponent.getInstance().setValue(KEY_LAST_CATEGORY, input);
         }
         return input.isEmpty() ? "empty" : input;
+    }
+
+    /**
+     * If the package subtree contains exactly one test class, reads its @Tag annotation
+     * value via PSI constant evaluation. Returns null if the category cannot be determined.
+     */
+    @Nullable
+    private String guessCategory(AbstractTestProxy packageProxy) {
+        List<String> classNames = new ArrayList<>();
+        collectClassNames(packageProxy, classNames);
+        if (classNames.size() != 1) return null;
+
+        com.intellij.psi.PsiClass psiClass = JavaPsiFacade.getInstance(project)
+                .findClass(classNames.get(0), GlobalSearchScope.allScope(project));
+        if (psiClass == null) return null;
+
+        com.intellij.psi.PsiAnnotation tag = psiClass.getAnnotation("org.junit.jupiter.api.Tag");
+        if (tag == null) return null;
+
+        com.intellij.psi.PsiAnnotationMemberValue value = tag.findAttributeValue("value");
+        if (value == null) return null;
+
+        Object constant = JavaPsiFacade.getInstance(project)
+                .getConstantEvaluationHelper()
+                .computeConstantExpression(value);
+        return constant instanceof String ? (String) constant : null;
+    }
+
+    /** Recursively collects class FQNs (java: nodes without #) from a proxy subtree. */
+    private void collectClassNames(AbstractTestProxy proxy, List<String> result) {
+        for (AbstractTestProxy child : proxy.getChildren()) {
+            String url = child.getLocationUrl();
+            if (url == null) continue;
+            if (url.startsWith("java:") && !url.contains("#")) {
+                result.add(url.substring("java:".length()));
+            } else if (url.startsWith("pkg:")) {
+                collectClassNames(child, result);
+            }
+        }
     }
 
     @Override
