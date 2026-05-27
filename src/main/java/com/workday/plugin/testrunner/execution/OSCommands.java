@@ -16,13 +16,11 @@ public class OSCommands {
     private static final String SUV_USER = "root";
     private static final String CMD_DELETE_FILE = "rm -f %s";
     private static final String CMD_SCP = "scp -p %s@%s:%s %s"; // -p preserves remote mtime for timestamp checks
-    // Local OMS/ORS JMX port discovery — matches any local process with wd.service.type= (ots or ors)
-    private static final String CMD_GREP_JMX_PORT = "ps -ef | grep 'wd.service.type=' | grep -v grep | grep -o 'com.sun.management.jmxremote.port=[0-9]*' | cut -d'=' -f2 | head -1";
     private static final String CMD_ON_SUV = "ssh -o StrictHostKeyChecking=no -o RequestTTY=no %s@%s %s";
     private static final String CMD_START_PORT_FORWARDING = "ssh -o StrictHostKeyChecking=no -L %d:localhost:%d %s@%s";
 
-    // ORS (remote) JMX port is fixed - defined in ors2-17-17:/usr/local/workday-oms/tomcat/conf/catalina.properties
-    private static final int REMOTE_ORS_JMX_PORT = 12096;
+    // JMX port is fixed for both local and remote ORS/OTS instances
+    private static final int ORS_JMX_PORT = 12096;
 
     private final String host;
     private UiContentDescriptor.UiProcessHandler processHandler;
@@ -54,12 +52,13 @@ public class OSCommands {
     }
 
     public int getLocalOmsJmxPort() {
-        return parsePort(executeLocalCommand(CMD_GREP_JMX_PORT));
+        log("Using fixed ORS JMX port: " + ORS_JMX_PORT);
+        return ORS_JMX_PORT;
     }
 
     public int getRemoteOmsJmxPort() {
-        log("Using fixed ORS JMX port: " + REMOTE_ORS_JMX_PORT);
-        return REMOTE_ORS_JMX_PORT;
+        log("Using fixed ORS JMX port: " + ORS_JMX_PORT);
+        return ORS_JMX_PORT;
     }
 
     public void startPortForwarding(final int port) {
@@ -142,15 +141,4 @@ public class OSCommands {
         }
     }
 
-    private int parsePort(String output) {
-        String trimmed = output.trim();
-        if (trimmed.isEmpty()) {
-            throw new RuntimeException("Could not find local ORS/OTS JMX port — is ORS/OTS running?");
-        }
-        try {
-            return Integer.parseInt(trimmed);
-        } catch (NumberFormatException e) {
-            throw new RuntimeException("Error parsing port from output: " + output, e);
-        }
-    }
 }
