@@ -113,13 +113,39 @@ public class TestResultPresenter {
             }
         }
 
-        // Render root packages (children of the virtual root "")
+        // Compact middle packages: skip single-child package nodes that have no classes
+        // (e.g. "com" → "com.workday" → "com.workday.bi" collapses to start at "com.workday.bi")
+        List<String> effectiveRoots = new ArrayList<>();
         for (String rootPkg : childPkgs.getOrDefault("", new TreeSet<>())) {
+            effectiveRoots.add(compactPackageChain(rootPkg, childPkgs, pkgClasses));
+        }
+
+        // Render effective root packages
+        for (String rootPkg : effectiveRoots) {
             renderPackageSuite(rootPkg, childPkgs, pkgClasses, byClass, processHandler);
         }
         // Classes in the default (no-name) package
         for (String className : pkgClasses.getOrDefault("", new TreeSet<>())) {
             renderClassSuite(className, byClass.get(className), processHandler);
+        }
+    }
+
+    /**
+     * Walks down a single-child package chain (no classes at intermediate levels)
+     * and returns the first package that has classes or branches into multiple children.
+     * E.g. "com" → "com.workday" → "com.workday.bi" collapses to "com.workday.bi".
+     */
+    private String compactPackageChain(String pkg,
+            TreeMap<String, TreeSet<String>> childPkgs,
+            TreeMap<String, TreeSet<String>> pkgClasses) {
+        while (true) {
+            TreeSet<String> children = childPkgs.getOrDefault(pkg, new TreeSet<>());
+            TreeSet<String> classes = pkgClasses.getOrDefault(pkg, new TreeSet<>());
+            if (children.size() == 1 && classes.isEmpty()) {
+                pkg = children.first();
+            } else {
+                return pkg;
+            }
         }
     }
 

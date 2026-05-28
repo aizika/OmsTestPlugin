@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'com.workday.plugin'
-version = '3.0'
+version = '3.1'
 
 repositories { mavenCentral() }
 
@@ -27,7 +27,7 @@ runIde {
 patchPluginXml {
     sinceBuild  = '241'
     untilBuild  = '999.*'
-    changeNotes = '3.0: Test Package action (auto-detects package and @Tag category from PSI); Stop button cancels SSH/jmxterm and releases OMS lock via cancelRunningTest; Testing header logged at top of each run; Stop+ReRun injected into SMTestRunner toolbar row.'
+    changeNotes = '3.1: Package hierarchy in test tree with compact middle packages (no more com/com.workday noise); Run button in toolbar re-runs selected test node; RemoteJ and Local JMX show individual test methods in tree; Local JMX uses direct JMX subprocess (faster).'
 }
 
 // Java compile options

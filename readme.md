@@ -123,14 +123,15 @@ The Host Prompt dialog includes an editable drop-down with previously used hosts
 
 Results appear in the standard **Run tool window**. Failed and ignored tests display the failure reason with clickable stack traces.
 
-The test tree groups results by class, then by method. Parameterized tests expand into a third level showing each individual variant:
+The test tree groups results by package, class, and method. Intermediate single-child package nodes are collapsed (e.g. `com` → `com.workday` → `com.workday.bi` shows as `com.workday.bi`). Parameterized tests expand into an extra level showing each individual variant:
 
 ```
-▼ MyTestClass
-  ▼ myParameterizedTest          (method node — click to run all variants)
-      myParameterizedTest(1)     (variant leaf)
-      myParameterizedTest(2)
-  ✓ someOtherTest
+▼ com.workday.bi.queryables
+  ▼ FormatDateSpartaTest
+    ▼ testFormatDate               (method node — click to run all variants)
+        testFormatDate(1)          (variant leaf)
+        testFormatDate(2)
+    ✓ testSimpleDate
 ```
 
 #### Run Button

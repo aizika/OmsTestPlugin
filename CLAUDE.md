@@ -85,3 +85,59 @@ The Run tool window toolbar contains a **Stop** button. Clicking it:
 - Depends on bundled `java` and `gradle` plugins
 - Uses `GutterMarkersContributor` to extend (not replace) native test gutter icons
 - Interacts with IntelliJ's Run tool window via `ProcessHandler` and `ConsoleView`
+
+## Future: Replace RemoteJ Gradle with Direct Distributor Protocol
+
+RemoteJ currently runs `./gradlew :oms-application:remoteServerTest` which adds ~30s of Gradle startup overhead. The actual test execution uses a lightweight HTTP protocol (the "distributor protocol") that can be called directly.
+
+### How the Distributor Protocol Works
+
+```
+Client (reply port, ephemeral)     ORS (port 12090)
+  |                                   |
+  |-- HTTP POST /ors/execute_remote_junit
+  |   {replyPort: <port>,             |
+  |    discoverySelectors: [...]}     |
+  |                                   |
+  |   <--- TEST_PLAN_STARTED ---------|
+  |   <--- EXECUTION_STARTED ---------|  (per test)
+  |   <--- EXECUTION_FINISHED --------|  (per test, with result)
+  |   <--- TEST_PLAN_FINISHED --------|
+```
+
+### Key Classes (from `junit-distributor-launcher:1.1.5` / `runner:1.1.5`)
+
+- **Package**: `com.workday.junit.distributor.messages`
+- `JunitDistributorDiscoveryRequest(replyPort, List<DiscoverySelectorData>)` — request body, deserialized via Jackson `ObjectMapper.readValue()`
+- `DiscoverySelectorData(type, value, className, methodName, methodParameterTypes)` — test selector
+- `DistributorEventHandlingServer(eventHandler, configParams)` — reply port HTTP server (**protected constructor** — must subclass or build own server with `com.sun.net.httpserver.HttpServer`)
+- `AbstractJUnitDistributorTestEvent` with `Type` enum: `EXECUTION_STARTED`, `EXECUTION_FINISHED`, `EXECUTION_SKIPPED`, `TEST_PLAN_STARTED`, `TEST_PLAN_FINISHED`, etc.
+- `ExecutionFinishedEvent` has `TestExecutionResult` (status + optional throwable)
+- `JunitDistributorHttpUtil.sendPostRequest(url, jsonBody)` — sends HTTP POST
+
+### ORS Server-Side Handler
+
+`RemoteJunitRequestHandlerProvider` (in `omsbase/src/test/java/com/workday/oms/server/`) registers at path `execute_remote_junit` for `DEV_LIKE_V2` environments. It uses `ObjectMapper.readValue(requestString, JunitDistributorDiscoveryRequest.class)` to parse the request, then delegates to `DistributorTestRunner.runTests(request)` via ServiceLoader.
+
+### Library Coordinates
+
+From `gradle/libs.versions.toml` in OMS/oms:
+```
+managed_workday_remote_junit_launcher = { module = "com.workday.remotejunit:junit-distributor-launcher", version.ref = "com_workday_remote_junit_consume"}
+managed_workday_remote_junit_runner = { module = "com.workday.remotejunit:junit-distributor-runner", version.ref = "com_workday_remote_junit_consume"}
+```
+
+### Gradle Properties Used by Current RemoteJ
+
+```
+-Pjunit.platform.engine.distributor.server.path=ors/execute_remote_junit
+-Pjunit.platform.engine.distributor.server.port=12090
+-Pjunit.platform.engine.distributor.reply.port=43096
+```
+
+### Implementation Notes
+
+- The source repository for the distributor libraries is not indexed in Unblocked — exact field names/Jackson annotations for the request and event classes are unknown. Before implementing, decompile the JARs from Artifactory or find the source repo.
+- The `DistributorEventHandlingServer` has a **protected constructor**. Options: subclass it, or build a custom reply server using `com.sun.net.httpserver.HttpServer`.
+- Dependency risks: `okhttp3` / `jackson-databind` versions may conflict with IntelliJ's bundled versions. Test with `runIde`.
+- Alternative: implement the protocol entirely without the library dependencies using `java.net.http.HttpClient` + `com.sun.net.httpserver.HttpServer` + IntelliJ's bundled Jackson, once the JSON wire format is confirmed.
