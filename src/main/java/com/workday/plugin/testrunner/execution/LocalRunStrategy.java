@@ -82,7 +82,13 @@ public class LocalRunStrategy
 
     @Override
     public void verifyOms() {
-        // ORS is confirmed running via JMX port discovery; no additional HTTP check needed.
+        int httpPort = osCommands.getLocalOrsHttpPort();
+        String url = "http://localhost:" + httpPort + "/ors/-/tenantoperation/-status";
+        String output = osCommands.executeLocalCommand("curl -sf --max-time 5 " + url).trim();
+        if (!"Ready".equals(output)) {
+            throw new RuntimeException("ORS tenant is not ready at " + url + " — got: " + output);
+        }
+        log("ORS tenant ready (port " + httpPort + ")");
     }
 
     private void log(final String error) {

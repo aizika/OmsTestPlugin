@@ -18,6 +18,8 @@ public class OSCommands {
     private static final String CMD_SCP = "scp -p %s@%s:%s %s"; // -p preserves remote mtime for timestamp checks
     // Local ORS JMX port discovery — matches local process with wd.service.type=
     private static final String CMD_GREP_JMX_PORT = "ps -ef | grep 'wd.service.type=' | grep -v grep | grep -o 'com.sun.management.jmxremote.port=[0-9]*' | cut -d'=' -f2 | head -1";
+    // Local ORS catalina.base discovery — used to read wd.connector.port from catalina.properties
+    private static final String CMD_GREP_CATALINA_BASE = "ps -ef | grep 'wd.service.type=' | grep -v grep | grep -o 'catalina.base=[^ ]*' | cut -d'=' -f2 | head -1";
     private static final String CMD_ON_SUV = "ssh -o StrictHostKeyChecking=no -o RequestTTY=no %s@%s %s";
     private static final String CMD_START_PORT_FORWARDING = "ssh -o StrictHostKeyChecking=no -L %d:localhost:%d %s@%s";
 
@@ -66,6 +68,20 @@ public class OSCommands {
         } catch (NumberFormatException e) {
             throw new RuntimeException("Error parsing JMX port from output: " + output, e);
         }
+    }
+
+    public int getLocalOrsHttpPort() {
+        String catalinaBase = executeLocalCommand(CMD_GREP_CATALINA_BASE).trim();
+        if (catalinaBase.isEmpty()) {
+            throw new RuntimeException("Could not find local ORS process");
+        }
+        String port = executeLocalCommand(
+            "grep '^wd.connector.port=' " + catalinaBase + "/conf/catalina.properties | cut -d'=' -f2"
+        ).trim();
+        if (port.isEmpty()) {
+            throw new RuntimeException("Could not find wd.connector.port in " + catalinaBase + "/conf/catalina.properties");
+        }
+        return Integer.parseInt(port);
     }
 
     public int getRemoteOmsJmxPort() {

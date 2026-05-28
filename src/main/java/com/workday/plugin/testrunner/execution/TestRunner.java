@@ -44,6 +44,7 @@ public class TestRunner {
 
         try {
             processHandler.log(buildTestingHeader(jmxParams));
+            runStrategy.verifyOms();
             final int jmxPort = runStrategy.getOmsJmxPort();
             processHandler.log("OMS JMX port: " + jmxPort);
             processHandler.log("Deleting old result files");
