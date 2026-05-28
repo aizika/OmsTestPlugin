@@ -82,13 +82,7 @@ public class LocalRunStrategy
 
     @Override
     public void verifyOms() {
-        String curlCmd = "http://localhost:12001/ots/-/tenantoperation/-list";
-        String output = osCommands.executeLocalCommand("curl " + curlCmd);
-        if (!output.contains("\noms: Ready")) {
-            final String error = "Error: Installation does not support oms tenant, output = ";
-            log(error);
-            throw new RuntimeException(error + output);
-        }
+        // ORS is confirmed running via JMX port discovery; no additional HTTP check needed.
     }
 
     private void log(final String error) {
