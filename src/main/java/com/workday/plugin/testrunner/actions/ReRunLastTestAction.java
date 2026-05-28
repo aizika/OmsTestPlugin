@@ -99,11 +99,12 @@ public class ReRunLastTestAction
                 return;
             }
 
-            // Local JMX: run via direct JMX connection to local OTS
+            // Local JMX: run via ./gradlew runTestJmx
             if (isLocalJmx) {
-                final RunStrategy runStrategy = new LocalRunStrategy(
+                final LocalRunStrategy runStrategy = new LocalRunStrategy(
                         new OSCommands(Locations.LOCALHOST), getLocalResultFile(), Locations.getBasePath());
-                TestRunner.runTest(project, Locations.LOCALHOST, jmxParameters, runStrategy, uiDescriptor);
+                runStrategy.setProcessHandler(uiDescriptor.getUiProcessHandler());
+                runStrategy.runJmxTest(jmxParameters);
                 return;
             }
 

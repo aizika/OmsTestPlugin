@@ -89,9 +89,10 @@ public class RunSelectedInRemoteJAction extends AnAction {
             Locations.setBasePath(lastEntry.getBasePath());
             final String[] jmxParams = packageJmxParams != null ? packageJmxParams : loc.toJmxArgs();
             ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                RunStrategy runStrategy = new LocalRunStrategy(
+                LocalRunStrategy runStrategy = new LocalRunStrategy(
                         new OSCommands(Locations.LOCALHOST), Locations.getLocalResultFile(), Locations.getBasePath());
-                TestRunner.runTest(project, Locations.LOCALHOST, jmxParams, runStrategy, uiDescriptor);
+                runStrategy.setProcessHandler(handler);
+                runStrategy.runJmxTest(jmxParams);
             });
 
         } else if (lastEntry.isOrs()) {
