@@ -1,13 +1,10 @@
 package com.workday.plugin.testrunner.actions;
 
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import com.intellij.ide.util.PropertiesComponent;
-import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.psi.JavaDirectoryService;
@@ -21,22 +18,11 @@ import com.intellij.psi.PsiPackage;
 import com.workday.plugin.testrunner.target.TestTargetExtractor;
 
 /**
- * Project-view right-click group: "Run OMS". Visible only when a valid OMS test class or
- * package directory is selected. Contains Local JMX and SUV JMX child actions.
+ * Shared utilities for Project-view OMS run actions.
  */
-public class ProjectViewRunGroup extends DefaultActionGroup {
+class ProjectViewRunGroup {
 
     static final String KEY_LAST_CATEGORY = "oms.lastCategory";
-
-    @Override
-    public void update(@NotNull AnActionEvent e) {
-        e.getPresentation().setEnabledAndVisible(getTarget(e) != null);
-    }
-
-    @Override
-    public @NotNull ActionUpdateThread getActionUpdateThread() {
-        return ActionUpdateThread.BGT;
-    }
 
     @Nullable
     static OmsTarget getTarget(AnActionEvent e) {

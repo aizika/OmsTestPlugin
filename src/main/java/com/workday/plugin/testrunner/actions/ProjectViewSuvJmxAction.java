@@ -56,6 +56,11 @@ public class ProjectViewSuvJmxAction extends AnAction {
     }
 
     @Override
+    public void update(@NotNull AnActionEvent e) {
+        e.getPresentation().setEnabledAndVisible(ProjectViewRunGroup.getTarget(e) != null);
+    }
+
+    @Override
     public @NotNull ActionUpdateThread getActionUpdateThread() {
         return ActionUpdateThread.BGT;
     }

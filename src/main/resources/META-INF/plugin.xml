@@ -38,18 +38,17 @@
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt meta R"/>
         </action>
 
-        <group id="OmsTest.ProjectViewGroup"
-               class="com.workday.plugin.testrunner.actions.ProjectViewRunGroup"
-               text="Run OMS"
-               icon="/icons/omsTestClassIcon.svg"
-               popup="true">
-            <action id="OmsTest.ProjectViewLocalJmx"
-                    class="com.workday.plugin.testrunner.actions.ProjectViewLocalJmxAction"
-                    text="Run (Local JMX)"/>
-            <action id="OmsTest.ProjectViewSuvJmx"
-                    class="com.workday.plugin.testrunner.actions.ProjectViewSuvJmxAction"
-                    text="Run (SUV JMX)"/>
+        <action id="OmsTest.ProjectViewLocalJmx"
+                class="com.workday.plugin.testrunner.actions.ProjectViewLocalJmxAction"
+                text="Run (Local JMX)"
+                icon="/icons/omsTestClassIcon.svg">
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
-        </group>
+        </action>
+        <action id="OmsTest.ProjectViewSuvJmx"
+                class="com.workday.plugin.testrunner.actions.ProjectViewSuvJmxAction"
+                text="Run (SUV JMX)"
+                icon="/icons/omsTestClassIcon.svg">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>
