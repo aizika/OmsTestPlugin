@@ -41,6 +41,7 @@
         <group id="OmsTest.ProjectViewGroup"
                class="com.workday.plugin.testrunner.actions.ProjectViewRunGroup"
                text="Run OMS"
+               icon="/icons/omsTestClassIcon.svg"
                popup="true">
             <action id="OmsTest.ProjectViewLocalJmx"
                     class="com.workday.plugin.testrunner.actions.ProjectViewLocalJmxAction"

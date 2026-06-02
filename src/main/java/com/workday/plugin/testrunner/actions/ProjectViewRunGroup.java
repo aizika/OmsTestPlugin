@@ -43,11 +43,19 @@ public class ProjectViewRunGroup extends DefaultActionGroup {
         PsiElement element = e.getData(CommonDataKeys.PSI_ELEMENT);
         PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
 
-        // Directory node → package
+        // Directory node → resolve to package
         if (element instanceof PsiDirectory dir) {
             PsiPackage pkg = JavaDirectoryService.getInstance().getPackage(dir);
-            if (pkg == null || pkg.getQualifiedName().isEmpty()) return null;
-            return OmsTarget.forPackage(pkg.getQualifiedName());
+            if (pkg != null) {
+                String name = pkg.getQualifiedName();
+                if (!isTrivialPackage(name)) return OmsTarget.forPackage(name);
+            }
+        }
+
+        // Package node (Package view or structure view)
+        if (element instanceof PsiPackage pkg) {
+            String name = pkg.getQualifiedName();
+            if (!isTrivialPackage(name)) return OmsTarget.forPackage(name);
         }
 
         // Java file → look for an OMS test class inside
@@ -65,6 +73,13 @@ public class ProjectViewRunGroup extends DefaultActionGroup {
         }
 
         return null;
+    }
+
+    /** Returns true for trivially shallow packages like "com" or "com.workday" (fewer than 2 dots). */
+    private static boolean isTrivialPackage(String name) {
+        if (name.isEmpty()) return true;
+        int first = name.indexOf('.');
+        return first < 0 || name.indexOf('.', first + 1) < 0;
     }
 
     @Nullable
