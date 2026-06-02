@@ -3,7 +3,7 @@
   OMS Test Runner IntelliJ Plugin
 </h1>
 
-This plugin allows running OMS integration tests by method or class from IntelliJ IDEA against a running ORS instance — either locally or on a remote SUV host.
+This plugin allows running OMS integration tests by method, class, or package from IntelliJ IDEA against a running ORS instance — either locally or on a remote SUV host.
 It also includes a one-click option to re-run the last test.
 
 *It was tested very lightly, so please use it at your own risk and report any issues you find.*
@@ -37,7 +37,8 @@ build/distributions/
 
 ### ✨ Features
 
-* ✅ Clickable icons in the IntelliJ gutter
+* ✅ Clickable icons in the IntelliJ gutter (method or class)
+* ✅ Right-click in the **Project panel** to run a class or package
 * ✅ Re-run the **last test** with one click or shortcut
 * ✅ Right-click any node in the test results tree to re-run it
 * ✅ Outputs results to the **Run tool window**
@@ -85,6 +86,21 @@ Connects via JMX directly to a locally-running ORS or OTS instance. Discovers th
 - Running against a **local ORS/OTS** instance
 
 Click **Run X (Local JMX)** — no host prompt, runs immediately.
+
+---
+
+### 🗂️ Project Panel Right-Click
+
+Right-clicking a **Java test file** or a **package directory** in the Project panel shows two OMS entries directly in the context menu:
+
+| Entry | What it does |
+|-------|-------------|
+| **Run (Local JMX)** | Runs the class or package against the local ORS instance |
+| **Run (SUV JMX)** | Prompts for a SUV host, then runs via SSH + JMX |
+
+The entries are hidden when the selection is not an OMS test class or package.  
+Package runs additionally prompt for a test category (e.g. `OMSBI`) — the last value is pre-filled.  
+Trivially shallow packages (`com`, `com.workday`) are excluded; everything from `com.workday.X` downward is supported.
 
 ---
 
