@@ -39,6 +39,7 @@ build/distributions/
 
 * ✅ Clickable icons in the IntelliJ gutter
 * ✅ Re-run the **last test** with one click or shortcut
+* ✅ Right-click any node in the test results tree to re-run it
 * ✅ Outputs results to the **Run tool window**
 * ✅ For failing tests, displays clickable **stack trace**
 
@@ -59,9 +60,7 @@ Debug 'FormatDateSpartaTest'                       |  Native IntelliJ actions
 ----
 OMS
 ├─ ▶️ Run FormatDateSpartaTest (SUV JMX)            |  SSH + JMX, direct SUV access
-├─ ▶️ Test Package (SUV JMX)                        |  SSH + JMX, runs entire package
-├─ ▶️ Run FormatDateSpartaTest (Local JMX)          |  JMX, local ORS/OTS instance
-└─ ▶️ Run FormatDateSpartaTest (RemoteJ)            |  Gradle-based, local or tunneled SUV
+└─ ▶️ Run FormatDateSpartaTest (Local JMX)          |  JMX, local ORS/OTS instance
 ```
 
 ### Mode 1: SUV JMX (SSH + JMX)
@@ -86,20 +85,6 @@ Connects via JMX directly to a locally-running ORS or OTS instance. Discovers th
 - Running against a **local ORS/OTS** instance
 
 Click **Run X (Local JMX)** — no host prompt, runs immediately.
-
-### Mode 3: RemoteJ
-
-Uses Gradle's `remoteServerTest` task to distribute tests via the ORS RemoteJ HTTP endpoint (port 12090).
-
-**When to use:**
-- Running against a **local ORS** instance (no configuration required)
-- Running against a **SUV host via SSH tunnel** (set up the tunnel first, then run)
-
-**SUV via SSH tunnel** — first forward the ports:
-```bash
-ssh -A -f -N -L 12090:localhost:12090 -R 43096:localhost:43096 root@<suv-host>
-```
-Then click **Run X (RemoteJ)**.
 
 ---
 
@@ -134,9 +119,22 @@ The test tree groups results by package, class, and method. Intermediate single-
     ✓ testSimpleDate
 ```
 
-#### Run Button
+#### Run Button & Right-Click
 
-A **Run** button in the test results toolbar lets you re-execute any selected node from the test tree using the **same strategy that was used most recently** (SUV JMX, Local JMX, or RemoteJ). This lets you quickly re-run a specific failing test without going back to the gutter menu.
+A **Run** button in the test results toolbar lets you re-execute any selected node from the test tree using the **same strategy that was used most recently** (SUV JMX or Local JMX). You can also **right-click** any node in the tree to get the same option in a context menu. This lets you quickly re-run a specific failing test without going back to the gutter menu.
+
+---
+
+## 🛠️ verify-oms-env.sh
+
+`verify-oms-env.sh` is a helper script included in this repository that checks whether your local OMS development environment is set up correctly. It verifies Java, Docker, Artifactory credentials, the OMS distribution, and whether ORS is running — and offers to fix issues interactively.
+
+**Usage:**
+```bash
+./verify-oms-env.sh [OMS_ROOT]
+```
+
+> ⚠️ **Use at your own risk.** This script is provided as-is with no guarantees or warranties of any kind. It may modify your local environment (start Docker, run `installCOrsDist`, start ORS). The author takes no responsibility for any issues caused by running it.
 
 ---
 

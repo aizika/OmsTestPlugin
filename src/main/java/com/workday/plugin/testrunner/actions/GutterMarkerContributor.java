@@ -10,15 +10,11 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.psi.PsiAnnotation;
-import com.intellij.psi.PsiAnnotationMemberValue;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiIdentifier;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiParameter;
-import com.intellij.psi.PsiReferenceExpression;
 
 import com.workday.plugin.testrunner.actions.ReRunLastTestAction;
 import com.workday.plugin.testrunner.common.HostPromptDialog;
@@ -28,7 +24,6 @@ import com.workday.plugin.testrunner.execution.LocalRunStrategy;
 import com.workday.plugin.testrunner.execution.OSCommands;
 import com.workday.plugin.testrunner.execution.OrsRunStrategy;
 import com.workday.plugin.testrunner.execution.ParamBuilder;
-import com.workday.plugin.testrunner.execution.RemoteJRunStrategy;
 import com.workday.plugin.testrunner.execution.RunStrategy;
 import com.workday.plugin.testrunner.execution.TestRunner;
 import com.workday.plugin.testrunner.target.TestTargetExtractor;
@@ -88,10 +83,8 @@ public class GutterMarkerContributor
         final String[] methodArgs = ParamBuilder.getMethodArgs(methodSignature);
         AnAction runSuvJmx = createOrsAction(method.getName(), project, methodArgs);
         AnAction runLocalJmx = createLocalJmxAction(method.getName(), project, methodArgs);
-        AnAction runRemoteJ = createRemoteJAction(method.getName(), project, methodArgs);
-        AnAction runPackage = createPackageAction(project, getPackageName(classFqName), getTagCategory(clazz));
 
-        return new Info(Run, element -> "Run OMS Test Method", runSuvJmx, runPackage, runLocalJmx, runRemoteJ);
+        return new Info(Run, element -> "Run OMS Test Method", runSuvJmx, runLocalJmx);
     }
 
     private Info getClassInfo(PsiClass clazz, Project project) {
@@ -108,32 +101,8 @@ public class GutterMarkerContributor
         final String[] classArgs = ParamBuilder.getClassArgs(fqName);
         AnAction runSuvJmx = createOrsAction(clazz.getName(), project, classArgs);
         AnAction runLocalJmx = createLocalJmxAction(clazz.getName(), project, classArgs);
-        AnAction runRemoteJ = createRemoteJAction(clazz.getName(), project, classArgs);
-        AnAction runPackage = createPackageAction(project, getPackageName(fqName), getTagCategory(clazz));
 
-        return new Info(Run, element -> "Run OMS Test Class", runSuvJmx, runPackage, runLocalJmx, runRemoteJ);
-    }
-
-    private @NotNull AnAction createRemoteJAction(
-            final String testName, final Project project, final String[] jmxParameters) {
-
-        return new AnAction("Run " + testName + " (RemoteJ)", null, Run) {
-            @Override
-            public void actionPerformed(@NotNull AnActionEvent event) {
-                // Get project from event — more reliable than the captured PSI project
-                final Project activeProject = event.getProject() != null ? event.getProject() : project;
-                final String runTabName = testName + "@remoteJ";
-                final String gradleTestArg = ParamBuilder.getGradleTestArg(jmxParameters);
-                final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(activeProject, runTabName);
-                // runGradleTest dispatches to EDT internally via invokeLater,
-                // so call it directly without wrapping in a pooled thread
-                LastTestStorage.setLastTestStorageRemoteJ(runTabName, jmxParameters);
-                final RemoteJRunStrategy strategy = new RemoteJRunStrategy();
-                strategy.setProject(activeProject);
-                strategy.setProcessHandler(uiDescriptor.getUiProcessHandler());
-                strategy.runGradleTest(gradleTestArg);
-            }
-        };
+        return new Info(Run, element -> "Run OMS Test Class", runSuvJmx, runLocalJmx);
     }
 
     private @NotNull AnAction createOrsAction(
@@ -195,63 +164,6 @@ public class GutterMarkerContributor
                 });
             }
         };
-    }
-
-    private @NotNull AnAction createPackageAction(final Project project,
-                                                   final String packageName,
-                                                   final String category) {
-        return new AnAction("Test Package " + packageName + " (SUV JMX)", null, Run) {
-            @Override
-            public void actionPerformed(@NotNull AnActionEvent event) {
-                final Project activeProject = event.getProject() != null ? event.getProject() : project;
-
-                HostPromptDialog dialog = new HostPromptDialog();
-                if (!dialog.showAndGet()) {
-                    return;
-                }
-                final String host = dialog.getHost();
-                if (host.isBlank()) {
-                    ReRunLastTestAction.showBalloon(activeProject, "No valid host specified");
-                    return;
-                }
-
-                final String runTabName = packageName + "@ors:" + host.replaceFirst("\\.workdaysuv\\.com$", "");
-                final String[] jmxParameters = ParamBuilder.getPackageArgs(packageName, category);
-                final RunStrategy runStrategy = new OrsRunStrategy(new OSCommands(host), host, getLocalResultFile());
-                final UiContentDescriptor uiDescriptor = UiContentDescriptor.createUiDescriptor(activeProject, runTabName);
-                ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                    LastTestStorage.setLastTestStorageOrs(host, runTabName, jmxParameters);
-                    TestRunner.runTest(activeProject, host, jmxParameters, runStrategy, uiDescriptor);
-                });
-            }
-        };
-    }
-
-    private static String getPackageName(final String fqName) {
-        int lastDot = fqName.lastIndexOf('.');
-        return lastDot > 0 ? fqName.substring(0, lastDot) : fqName;
-    }
-
-    private static String getTagCategory(final PsiClass clazz) {
-        for (PsiAnnotation annotation : clazz.getAnnotations()) {
-            if (!"org.junit.jupiter.api.Tag".equals(annotation.getQualifiedName())) {
-                continue;
-            }
-            PsiAnnotationMemberValue value = annotation.findDeclaredAttributeValue("value");
-            if (value == null || !value.getText().contains("OmsTestCategories.")) {
-                continue;
-            }
-            if (value instanceof PsiReferenceExpression ref) {
-                PsiElement resolved = ref.resolve();
-                if (resolved instanceof PsiField field) {
-                    Object constant = field.computeConstantValue();
-                    if (constant instanceof String s) {
-                        return s;
-                    }
-                }
-            }
-        }
-        return "empty";
     }
 
 }

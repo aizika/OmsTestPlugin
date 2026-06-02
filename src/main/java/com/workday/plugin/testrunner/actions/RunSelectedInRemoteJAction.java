@@ -60,10 +60,13 @@ public class RunSelectedInRemoteJAction extends AnAction {
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
-        AbstractTestProxy proxy = getSelectedProxy();
+        execute(getSelectedProxy(), project);
+    }
+
+    public static void execute(AbstractTestProxy proxy, Project project) {
         if (proxy == null || isVariantLeaf(proxy)) return;
 
-        TestLocation loc = parseLocation(proxy);
+        TestLocation loc = parseLocation(proxy, project);
         if (loc == null) return;
 
         LastTestStorage.LastTestEntry lastEntry = LastTestStorage.getLastTestEntry();
@@ -72,7 +75,7 @@ public class RunSelectedInRemoteJAction extends AnAction {
         // RemoteJ ignores category (Gradle --tests has no category filter).
         String[] packageJmxParams = null;
         if (loc.isPackage() && lastEntry != null && (lastEntry.isLocalJmx() || lastEntry.isOrs())) {
-            String category = promptForCategory(proxy);
+            String category = promptForCategory(proxy, project);
             if (category == null) return; // cancelled
             packageJmxParams = ParamBuilder.getPackageArgs(loc.packageName(), category);
         }
@@ -122,8 +125,8 @@ public class RunSelectedInRemoteJAction extends AnAction {
      * Returns null if the dialog is cancelled.
      */
     @Nullable
-    private String promptForCategory(AbstractTestProxy packageProxy) {
-        String guessed = guessCategory(packageProxy);
+    private static String promptForCategory(AbstractTestProxy packageProxy, Project project) {
+        String guessed = guessCategory(packageProxy, project);
         String last = PropertiesComponent.getInstance().getValue(KEY_LAST_CATEGORY, "");
         String initial = guessed != null ? guessed : last;
 
@@ -147,7 +150,7 @@ public class RunSelectedInRemoteJAction extends AnAction {
      * value via PSI constant evaluation. Returns null if the category cannot be determined.
      */
     @Nullable
-    private String guessCategory(AbstractTestProxy packageProxy) {
+    private static String guessCategory(AbstractTestProxy packageProxy, Project project) {
         List<String> classNames = new ArrayList<>();
         collectClassNames(packageProxy, classNames);
         if (classNames.size() != 1) return null;
@@ -169,7 +172,7 @@ public class RunSelectedInRemoteJAction extends AnAction {
     }
 
     /** Recursively collects class FQNs (java: nodes without #) from a proxy subtree. */
-    private void collectClassNames(AbstractTestProxy proxy, List<String> result) {
+    private static void collectClassNames(AbstractTestProxy proxy, List<String> result) {
         for (AbstractTestProxy child : proxy.getChildren()) {
             String url = child.getLocationUrl();
             if (url == null) continue;
@@ -223,7 +226,7 @@ public class RunSelectedInRemoteJAction extends AnAction {
      * a method-group suite). Such nodes share the same locationUrl as the method group and
      * cannot be targeted individually, so the Run button is disabled for them.
      */
-    private boolean isVariantLeaf(AbstractTestProxy proxy) {
+    public static boolean isVariantLeaf(AbstractTestProxy proxy) {
         if (!proxy.getChildren().isEmpty()) return false;
         AbstractTestProxy parent = proxy.getParent();
         if (parent == null) return false;
@@ -232,7 +235,7 @@ public class RunSelectedInRemoteJAction extends AnAction {
     }
 
     @Nullable
-    private TestLocation parseLocation(AbstractTestProxy proxy) {
+    private static TestLocation parseLocation(AbstractTestProxy proxy, Project project) {
         String url = proxy.getLocationUrl();
 
         if (url.startsWith("pkg:")) {
@@ -254,14 +257,14 @@ public class RunSelectedInRemoteJAction extends AnAction {
         }
 
         String methodName = parts[1];
-        String paramSuffix = buildParamTypesSuffix(className, methodName);
+        String paramSuffix = buildParamTypesSuffix(className, methodName, project);
         String jmxMethodSig = className + "@" + methodName + paramSuffix;
         return new TestLocation(className, methodName, jmxMethodSig,
                 className + "." + methodName, methodName + "@run", null);
     }
 
     /** Looks up parameter types via PSI so ORS can resolve parameterized test methods. */
-    private String buildParamTypesSuffix(String className, String methodName) {
+    private static String buildParamTypesSuffix(String className, String methodName, Project project) {
         com.intellij.psi.PsiClass psiClass = JavaPsiFacade.getInstance(project)
                 .findClass(className, GlobalSearchScope.allScope(project));
         if (psiClass == null) return "";

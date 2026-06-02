@@ -105,7 +105,47 @@ public class UiContentDescriptor
                     }
                 }
             }
+
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                handlePopup(e);
+            }
+
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent e) {
+                handlePopup(e);
+            }
+
+            private void handlePopup(java.awt.event.MouseEvent e) {
+                if (!e.isPopupTrigger()) return;
+                int row = tree.getRowForLocation(e.getX(), e.getY());
+                if (row < 0) return;
+                tree.setSelectionRow(row);
+                AbstractTestProxy proxy = getProxyAtRow(tree, row);
+                if (proxy == null || RunSelectedInRemoteJAction.isVariantLeaf(proxy)) return;
+                String url = proxy.getLocationUrl();
+                if (url == null || (!url.startsWith("java:") && !url.startsWith("pkg:"))) return;
+                showRunPopup(tree, proxy, project, e);
+            }
         });
+    }
+
+    private static AbstractTestProxy getProxyAtRow(JTree tree, int row) {
+        javax.swing.tree.TreePath path = tree.getPathForRow(row);
+        if (path == null) return null;
+        Object last = path.getLastPathComponent();
+        if (!(last instanceof DefaultMutableTreeNode node)) return null;
+        if (!(node.getUserObject() instanceof SMTRunnerNodeDescriptor descriptor)) return null;
+        return descriptor.getElement();
+    }
+
+    private static void showRunPopup(JTree tree, AbstractTestProxy proxy, Project project,
+                                     java.awt.event.MouseEvent e) {
+        JPopupMenu popup = new JPopupMenu();
+        JMenuItem item = new JMenuItem("Run selected", AllIcons.Actions.Execute);
+        item.addActionListener(ev -> RunSelectedInRemoteJAction.execute(proxy, project));
+        popup.add(item);
+        popup.show(tree, e.getX(), e.getY());
     }
 
     private static void navigateFromSelectedNode(JTree tree, Project project) {
