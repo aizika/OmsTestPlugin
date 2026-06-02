@@ -9,7 +9,9 @@
 
     <description>
         Runs OMS integration tests directly from the IDE against a local or remote ORS/SUV instance.
-        Gutter menu actions: run by method, class, or package (SUV JMX); run via Local JMX or RemoteJ.
+        Gutter menu: run by method or class via Local JMX or SUV JMX.
+        Project view right-click: run a class or package via Local JMX or SUV JMX.
+        Test results tree: right-click any node or use the toolbar Run button to re-run it.
         Stop button cancels the running test and releases the OMS lock via cancelRunningTest.
         Re-run shortcut: ⌃⌥⌘R.
     </description>
@@ -35,5 +37,18 @@
                 icon="/icons/rerun.svg">
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt meta R"/>
         </action>
+
+        <group id="OmsTest.ProjectViewGroup"
+               class="com.workday.plugin.testrunner.actions.ProjectViewRunGroup"
+               text="Run OMS"
+               popup="true">
+            <action id="OmsTest.ProjectViewLocalJmx"
+                    class="com.workday.plugin.testrunner.actions.ProjectViewLocalJmxAction"
+                    text="Run (Local JMX)"/>
+            <action id="OmsTest.ProjectViewSuvJmx"
+                    class="com.workday.plugin.testrunner.actions.ProjectViewSuvJmxAction"
+                    text="Run (SUV JMX)"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </group>
     </actions>
 </idea-plugin>
